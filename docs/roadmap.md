@@ -27,10 +27,10 @@ is not marked complete until code, tests and reproducible evidence exist.
 
 ## M3 — Real Foxit preparation
 
-- [ ] Foxit MCP client configured without eSign authority
-- [ ] One or two visible reversible PDF operations
-- [ ] Immutable artifact storage and provenance
-- [ ] Prompt-injection and hostile-PDF controls
+- [x] Foxit MCP client configured without eSign authority
+- [ ] One visible reversible PDF operation through the real Foxit service
+- [x] Immutable content-addressed artifact storage and provenance contract
+- [x] Fixed tool allowlist, inert prompt data and PDF-signature validation
 - [ ] Reproducible MCP call evidence
 
 ## M4 — Human review and eSign

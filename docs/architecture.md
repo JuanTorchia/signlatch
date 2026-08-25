@@ -90,6 +90,12 @@ generation.
 - HMAC-verified webhook endpoint.
 - Event timeline for final demo and audit evidence.
 
+The M3 client uses the official Python Foxit MCP server over stdio. Its tool
+registry is reduced to upload, text-to-PDF conversion and download; untrusted
+document text never controls tool selection or filesystem paths. See
+[Foxit MCP developer setup](foxit-mcp-setup.md) and
+[ADR 0003](decisions/0003-foxit-mcp-stdio-boundary.md).
+
 ## Required runtime evidence
 
 - Prompt-to-document flow using real Foxit MCP operations.

@@ -15,6 +15,7 @@
     "check:integration": "pnpm check && pnpm test:integration"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
     "next": "16.3.2",
     "postgres": "^3.4.9",
     "react": "19.2.8",

@@ -25,6 +25,10 @@ pnpm dev
 
 Then open <http://localhost:3000>.
 
+Real PDF preparation uses Foxit's official Python MCP server. Follow the
+[Foxit MCP developer setup](docs/foxit-mcp-setup.md) to obtain credentials,
+install the server and configure local secrets.
+
 Run the same quality gate used by CI:
 
 ```bash
@@ -41,14 +45,15 @@ pnpm test:harness
 
 This repository is the public system of record from day zero. The implemented
 foundation includes the deterministic approval envelope, an executable attack
-harness and a Postgres workflow store tested against a real database. Production
-database provisioning, Foxit credentials, MCP orchestration and eSign dispatch
-are not complete and are never represented as complete.
+harness, a Postgres workflow store tested against a real database, and the M3
+Foxit MCP preparation boundary. Production database provisioning, credentialed
+Foxit evidence and eSign dispatch are not complete and are never represented as
+complete.
 
-Current milestone: **M2 — durable workflow core**. The Postgres state machine,
-transactional dispatch claim, outbox, reconciliation path and audit hash chain
-are implemented and integration-tested. Production database provisioning and the
-Foxit adapter remain pending.
+Current milestone: **M3 — real Foxit preparation**. The official MCP stdio
+client, reversible tool allowlist, immutable artifact store and sanitized
+provenance contract are implemented. A credentialed Foxit run and its public
+evidence remain pending.
 
 See [docs/roadmap.md](docs/roadmap.md) for milestone gates and evidence required
 before each integration is enabled.
