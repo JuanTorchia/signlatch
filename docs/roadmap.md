@@ -20,7 +20,9 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [x] Ambiguous-timeout reconciliation path
 - [x] Append-only audit event schema
 - [ ] Production database provisioning and migration automation
-- [ ] Outbox worker lease, retry budget and provider reconciliation adapter
+- [x] Outbox worker lease and retry budget
+- [x] Fail-closed provider adapter contract
+- [ ] Expired-lease sweeper and provider reconciliation adapter
 
 ## M3 — Real Foxit preparation
 

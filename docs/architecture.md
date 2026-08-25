@@ -69,6 +69,11 @@ will use a durable outbox and a stable provider idempotency key derived from the
 approval ID. The current in-memory harness demonstrates semantics only; it is
 not production persistence.
 
+Outbox workers acquire rows with `FOR UPDATE SKIP LOCKED`. A failure may return
+to `pending` only when the adapter can prove that no provider request was sent.
+Thrown errors, exhausted retry budgets and ambiguous responses transition the
+workflow to `reconcile`. They never trigger a blind resend.
+
 ## Planned components
 
 - Next.js App Router web application.
