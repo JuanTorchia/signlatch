@@ -39,15 +39,28 @@ pnpm test:harness
 
 ## Public build status
 
-This repository is the public system of record from day zero. The first
-implemented slice is the deterministic approval envelope and an executable
-attack harness. Foxit credentials, MCP orchestration, durable persistence and
-eSign dispatch are not implemented yet and are never represented as complete.
+This repository is the public system of record from day zero. The implemented
+foundation includes the deterministic approval envelope, an executable attack
+harness and a Postgres workflow store tested against a real database. Production
+database provisioning, Foxit credentials, MCP orchestration and eSign dispatch
+are not complete and are never represented as complete.
 
-Current milestone: **M1 — authority contract and negative-test harness**.
+Current milestone: **M2 — durable workflow core**. The Postgres state machine,
+transactional dispatch claim, outbox, reconciliation path and audit hash chain
+are implemented and integration-tested. Production database provisioning and the
+Foxit adapter remain pending.
 
 See [docs/roadmap.md](docs/roadmap.md) for milestone gates and evidence required
 before each integration is enabled.
+
+Postgres integration tests require an isolated test database:
+
+```bash
+TEST_DATABASE_URL=postgresql://... pnpm test:integration
+```
+
+The test migration truncates its configured database. Never point
+`TEST_DATABASE_URL` at development or production data.
 
 ## Security
 

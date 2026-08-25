@@ -14,11 +14,13 @@ is not marked complete until code, tests and reproducible evidence exist.
 
 ## M2 — Durable workflow core
 
-- [ ] Explicit fail-closed state machine
-- [ ] Transactional compare-and-swap for approval consumption
-- [ ] Durable outbox and stable provider idempotency key
-- [ ] Ambiguous-timeout reconciliation path
-- [ ] Append-only audit event schema
+- [x] Explicit fail-closed state machine
+- [x] Transactional compare-and-swap for approval consumption
+- [x] Durable outbox and stable provider idempotency key
+- [x] Ambiguous-timeout reconciliation path
+- [x] Append-only audit event schema
+- [ ] Production database provisioning and migration automation
+- [ ] Outbox worker lease, retry budget and provider reconciliation adapter
 
 ## M3 — Real Foxit preparation
 
