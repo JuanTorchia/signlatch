@@ -15,7 +15,9 @@ import {
 import { prepareTextPdf } from "../src/server/foxit/prepare-text-pdf";
 import { FilesystemArtifactStore } from "../src/server/artifacts/filesystem-store";
 
-const minimalPdf = Buffer.from("%PDF-1.7\n%%EOF\n");
+const minimalPdf = Buffer.from(
+  "%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\nstartxref\n9\n%%EOF\n",
+);
 
 class MemoryArtifacts implements ImmutableArtifactStore {
   public writes = 0;
@@ -57,6 +59,8 @@ test("runs a fixed, reversible Foxit tool sequence and records provenance", asyn
   assert.equal(result.artifact.id, "sha256:test");
   assert.deepEqual(result.provenance.map((entry) => entry.sequence), [1, 2, 3]);
   assert.equal(result.provenance[1]?.taskId, "task-1");
+  assert.equal(result.manifest.artifactSha256, result.artifact.sha256);
+  assert.match(result.manifest.manifestSha256, /^[a-f0-9]{64}$/);
   assert.ok(!JSON.stringify(result.provenance).includes("Prepare a supplier agreement"));
 });
 
@@ -84,7 +88,20 @@ test("stores PDF bytes under an immutable content-addressed key", async () => {
     assert.equal(first.id, second.id);
     assert.match(first.storageKey, /^sha256\/[a-f0-9]{2}\/[a-f0-9]{64}\.pdf$/);
     assert.deepEqual(await readFile(path.join(root, first.storageKey)), minimalPdf);
-    await assert.rejects(() => store.putPdf(Buffer.from("not a pdf")), /not a PDF/);
+    await assert.rejects(() => store.putPdf(Buffer.from("not a pdf")), /PDF size/);
+    await assert.rejects(
+      () => store.putPdf(Buffer.from("%PDF-1.7\n/JavaScript\nstartxref\n9\n%%EOF\n")),
+      /forbidden feature/,
+    );
+    const manifestKey = await store.putManifest({
+      schema: "signlatch.foxit-provenance.v1",
+      recordedAt: "2026-08-25T00:00:00.000Z",
+      artifactSha256: first.sha256,
+      calls: [],
+      manifestSha256: "a".repeat(64),
+    });
+    assert.equal(manifestKey, `manifests/${"a".repeat(64)}.json`);
+    assert.match(await readFile(path.join(root, manifestKey), "utf8"), /artifactSha256/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

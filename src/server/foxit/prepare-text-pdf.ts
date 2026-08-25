@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import {
+  createProvenanceManifest,
   digestToolArguments,
   type ImmutableArtifactStore,
   type PdfToolCaller,
@@ -67,9 +68,14 @@ export async function prepareTextPdf(
 
     const pdfBytes = await readFile(outputPath);
     const artifact = await artifacts.putPdf(pdfBytes);
-    return { artifact, provenance };
+    const manifest = createProvenanceManifest(artifact.sha256, provenance);
+    await artifacts.putManifest?.(manifest);
+    return { artifact, provenance, manifest };
   } finally {
-    await caller.close?.();
-    await rm(workspace, { recursive: true, force: true });
+    try {
+      await caller.close?.();
+    } finally {
+      await rm(workspace, { recursive: true, force: true });
+    }
   }
 }

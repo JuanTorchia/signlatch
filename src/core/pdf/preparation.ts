@@ -37,6 +37,7 @@ export type ArtifactRecord = {
 
 export interface ImmutableArtifactStore {
   putPdf(bytes: Uint8Array): Promise<ArtifactRecord>;
+  putManifest?(manifest: ProvenanceManifest): Promise<string>;
 }
 
 export type ProvenanceEntry = {
@@ -51,6 +52,15 @@ export type ProvenanceEntry = {
 export type PreparedPdf = {
   artifact: ArtifactRecord;
   provenance: ProvenanceEntry[];
+  manifest: ProvenanceManifest;
+};
+
+export type ProvenanceManifest = {
+  schema: "signlatch.foxit-provenance.v1";
+  recordedAt: string;
+  artifactSha256: string;
+  calls: ProvenanceEntry[];
+  manifestSha256: string;
 };
 
 const MAX_PROMPT_BYTES = 32_000;
@@ -76,5 +86,38 @@ export function assertPreparationTool(name: string): asserts name is FoxitPrepar
 }
 
 export function digestToolArguments(argumentsValue: Record<string, unknown>): string {
-  return sha256(JSON.stringify(argumentsValue, Object.keys(argumentsValue).sort()));
+  return sha256(`signlatch:foxit-arguments:v1\n${canonicalJson(argumentsValue)}`);
+}
+
+export function createProvenanceManifest(
+  artifactSha256: string,
+  calls: ProvenanceEntry[],
+  recordedAt = new Date().toISOString(),
+): ProvenanceManifest {
+  const unsigned = {
+    schema: "signlatch.foxit-provenance.v1" as const,
+    recordedAt,
+    artifactSha256,
+    calls,
+  };
+  return {
+    ...unsigned,
+    manifestSha256: sha256(`signlatch:foxit-provenance:v1\n${canonicalJson(unsigned)}`),
+  };
+}
+
+function canonicalJson(value: unknown): string {
+  const normalize = (entry: unknown): unknown => {
+    if (typeof entry === "string") return entry.normalize("NFKC");
+    if (Array.isArray(entry)) return entry.map(normalize);
+    if (entry !== null && typeof entry === "object") {
+      return Object.fromEntries(
+        Object.entries(entry)
+          .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+          .map(([key, nested]) => [key, normalize(nested)]),
+      );
+    }
+    return entry;
+  };
+  return JSON.stringify(normalize(value));
 }

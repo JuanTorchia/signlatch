@@ -1,6 +1,8 @@
+import { PreparationDemo } from "./preparation-demo";
+
 const workflow = [
   { step: "01", title: "Prepare", description: "The agent turns a plain request into a reviewable document with Foxit MCP." },
-  { step: "02", title: "Inspect", description: "Deterministic checks surface risky clauses, recipients, and hidden actions." },
+  { step: "02", title: "Inspect", description: "Deterministic checks bind the exact PDF hash, recipients, and Foxit provenance." },
   { step: "03", title: "Approve", description: "A person sees the exact artifact and unlocks the irreversible handoff." },
   { step: "04", title: "Sign", description: "Foxit eSign returns the executed document with its audit trail." },
 ];
@@ -8,7 +10,7 @@ const workflow = [
 const safeguards = [
   "No autonomous signature dispatch",
   "Exact-document approval",
-  "Recipient and clause review",
+  "Recipient set binding",
   "Verifiable eSign audit trail",
 ];
 
@@ -21,7 +23,7 @@ export default function Home() {
             <span className="brand-mark" aria-hidden="true">SL</span>
             <span>SignLatch</span>
           </a>
-          <a className="nav-link" href="#architecture">Architecture</a>
+          <div className="nav-links"><a className="nav-link" href="#demo">Live demo</a><a className="nav-link" href="#architecture">Architecture</a></div>
         </nav>
 
         <div id="top" className="hero-grid">
@@ -55,8 +57,8 @@ export default function Home() {
               <div className="risk-row">
                 <span className="risk-icon" aria-hidden="true">!</span>
                 <div>
-                  <strong>Unlimited indemnity detected</strong>
-                  <p>Clause 8.2 requires explicit review before release.</p>
+                  <strong>Exact artifact hash captured</strong>
+                  <p>Any byte or recipient change invalidates approval.</p>
                 </div>
               </div>
               <div className="document-line line-long" />
@@ -70,6 +72,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <PreparationDemo />
 
       <section id="workflow" className="workflow shell">
         <div className="section-heading">

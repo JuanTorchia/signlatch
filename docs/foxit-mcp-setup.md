@@ -40,8 +40,8 @@ FOXIT_CLOUD_API_HOST=https://na1.fusion.foxit.com/pdf-services
 FOXIT_CLOUD_API_CLIENT_ID=replace-with-client-id
 FOXIT_CLOUD_API_CLIENT_SECRET=replace-with-client-secret
 FOXIT_MCP_COMMAND=uv
-FOXIT_MCP_ARGS=run python -m foxit_pdf_api_mcp_server.main
 FOXIT_MCP_CWD=/absolute/path/to/python/foxit-pdf-api-mcp-server
+SIGNLATCH_DEMO_ENABLED=true
 ```
 
 Never commit `.env.local`, screenshots containing secrets, terminal output that
@@ -67,7 +67,7 @@ not depend on HTTP transport.
 At official repository revision `db16f9d0f18b878a07f41621e708dbb78bc13e4c`,
 package version `0.2.3`, the installed console script points to the obsolete
 module `foxit_pdf_api_mcp` and exits with `ModuleNotFoundError`. SignLatch uses
-the package's real module entrypoint shown above. Remove this workaround only
+the package's real module entrypoint internally. Remove this workaround only
 after verifying a newer official release.
 
 ## M3 authority boundary
@@ -99,5 +99,5 @@ approval latch.
 
 A mocked test proves the orchestration contract, not Foxit integration. The
 first credentialed run is recorded in `evidence/m3/foxit-text-to-pdf-2026-08-25.json`.
-Credit usage remains a separate dashboard observation and must not be inferred
-from a successful response.
+The authenticated dashboard later confirmed one credit used and 499 remaining;
+that observation is recorded separately from the successful API response.

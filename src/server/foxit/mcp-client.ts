@@ -24,7 +24,14 @@ type FoxitMcpConfig = {
   clientSecret: string;
 };
 
-export function foxitMcpConfigFromEnv(env: NodeJS.ProcessEnv = process.env): FoxitMcpConfig {
+const MCP_CONNECT_TIMEOUT_MS = 15_000;
+const MCP_TOOL_TIMEOUT_MS = 310_000;
+const MAX_MCP_TEXT_BYTES = 64 * 1024;
+const FOXIT_ID = /^[A-Za-z0-9_-]{1,128}$/;
+
+export function foxitMcpConfigFromEnv(
+  env: Record<string, string | undefined> = process.env,
+): FoxitMcpConfig {
   const required = (name: string) => {
     const value = env[name]?.trim();
     if (!value) throw new Error(`Missing required Foxit configuration: ${name}`);
@@ -32,10 +39,8 @@ export function foxitMcpConfigFromEnv(env: NodeJS.ProcessEnv = process.env): Fox
   };
 
   return {
-    command: env.FOXIT_MCP_COMMAND?.trim() || "uv",
-    args: (env.FOXIT_MCP_ARGS || "run python -m foxit_pdf_api_mcp_server.main")
-      .split(" ")
-      .filter(Boolean),
+    command: validatedCommand(env),
+    args: ["run", "python", "-m", "foxit_pdf_api_mcp_server.main"],
     cwd: env.FOXIT_MCP_CWD?.trim() || undefined,
     apiHost: required("FOXIT_CLOUD_API_HOST"),
     clientId: required("FOXIT_CLOUD_API_CLIENT_ID"),
@@ -54,15 +59,15 @@ export class FoxitStdioMcpClient implements PdfToolCaller {
     const result = (await client.callTool(
       { name: call.name, arguments: call.arguments },
       CallToolResultSchema,
+      { timeout: MCP_TOOL_TIMEOUT_MS, maxTotalTimeout: MCP_TOOL_TIMEOUT_MS },
     )) as CallToolResult;
     if (result.isError) throw new Error(`Foxit MCP tool failed: ${call.name}`);
     const text = result.content.find((item) => item.type === "text");
     if (!text || text.type !== "text") throw new Error("Foxit MCP returned no text result");
-    const payload: unknown = JSON.parse(text.text);
-    if (!isSuccessfulToolResult(payload)) {
-      throw new Error(`Foxit MCP returned an unsuccessful result for ${call.name}`);
+    if (Buffer.byteLength(text.text, "utf8") > MAX_MCP_TEXT_BYTES) {
+      throw new Error("Foxit MCP text result exceeds the response limit");
     }
-    return payload;
+    return parseToolResult(call.name, JSON.parse(text.text));
   }
 
   async close(): Promise<void> {
@@ -85,13 +90,55 @@ export class FoxitStdioMcpClient implements PdfToolCaller {
         FOXIT_CLOUD_API_CLIENT_SECRET: this.config.clientSecret,
       },
     });
+    transport.stderr?.on("data", () => undefined);
     const client = new Client({ name: "signlatch", version: "0.1.0" });
-    await client.connect(transport);
+    await withTimeout(client.connect(transport), MCP_CONNECT_TIMEOUT_MS, "Foxit MCP connect timeout");
     this.client = client;
     return client;
   }
 }
 
-function isSuccessfulToolResult(value: unknown): value is ToolResult {
-  return typeof value === "object" && value !== null && "success" in value && value.success === true;
+function validatedCommand(env: Record<string, string | undefined>): string {
+  const command = env.FOXIT_MCP_COMMAND?.trim() || "uv";
+  if (env.NODE_ENV === "production" && !command.startsWith("/")) {
+    throw new Error("FOXIT_MCP_COMMAND must be an absolute path in production");
+  }
+  return command;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function parseToolResult(name: ToolCall["name"], value: unknown): ToolResult {
+  if (typeof value !== "object" || value === null || !("success" in value) || value.success !== true) {
+    throw new Error(`Foxit MCP returned an unsuccessful result for ${name}`);
+  }
+  const record = value as Record<string, unknown>;
+  const id = (field: string) => {
+    const candidate = record[field];
+    if (typeof candidate !== "string" || !FOXIT_ID.test(candidate)) {
+      throw new Error(`Foxit MCP returned an invalid ${field} for ${name}`);
+    }
+    return candidate;
+  };
+  if (name === "upload_document") return { success: true, documentId: id("documentId") };
+  if (name === "pdf_from_text") {
+    return { success: true, taskId: id("taskId"), resultDocumentId: id("resultDocumentId") };
+  }
+  const size = record.size;
+  if (typeof size !== "number" || !Number.isSafeInteger(size) || size < 1 || size > 20 * 1024 * 1024) {
+    throw new Error("Foxit MCP returned an invalid download size");
+  }
+  return { success: true, documentId: id("documentId"), size };
 }

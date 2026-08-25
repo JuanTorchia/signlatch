@@ -43,8 +43,10 @@
   ],
   "creditUsage": {
     "expected": 1,
-    "observedInDashboard": null,
-    "note": "Not yet verified in the authenticated Usage view."
+    "observedInDashboard": 1,
+    "observedAt": "2026-08-25T20:20:35Z",
+    "remainingCredits": 499,
+    "note": "Authenticated Foxit dashboard showed 1 credit used, 499 remaining, 4 API calls, 100% success and 0 failed requests."
   },
   "secretsIncluded": false
 }

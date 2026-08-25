@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-25T20:34:14.176Z",
+  "journey": "browser-prompt-to-foxit-pdf-review",
+  "result": "success",
+  "runtime": {
+    "framework": "Next.js 16.3.2",
+    "route": "POST /api/prepare",
+    "status": 200,
+    "durationSeconds": 8.4,
+    "artifactRouteStatus": 200,
+    "consoleErrors": 0,
+    "errorOverlay": false
+  },
+  "foxit": {
+    "tools": [
+      "upload_document",
+      "pdf_from_text",
+      "download_document"
+    ],
+    "expectedCredits": 1,
+    "eSignInvoked": false
+  },
+  "artifact": {
+    "path": "evidence/m3/browser-journey/prepared.pdf",
+    "sha256": "fcfa99a7f90a98c3be56b95f0853faae655e5a001b62acb8ff94fa917dcd6bdb",
+    "mediaType": "application/pdf",
+    "pdfVersion": "1.7",
+    "pages": 1
+  },
+  "provenance": {
+    "path": "evidence/m3/browser-journey/provenance.json",
+    "manifestSha256": "2a7162864625f2c21a03e5e68f5a47b1776fe92e6dcf94e572593fdabc8d615b"
+  },
+  "screenshots": [
+    "evidence/m3/browser-journey/live-result.png",
+    "evidence/m3/browser-journey/hash-and-latch.png"
+  ],
+  "authority": {
+    "signingEnabled": false,
+    "visibleReason": "Human approval is not implemented"
+  },
+  "secretsIncluded": false
+}

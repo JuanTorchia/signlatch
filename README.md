@@ -29,6 +29,10 @@ Real PDF preparation uses Foxit's official Python MCP server. Follow the
 [Foxit MCP developer setup](docs/foxit-mcp-setup.md) to obtain credentials,
 install the server and configure local secrets.
 
+Set `SIGNLATCH_DEMO_ENABLED=true` only in a trusted local environment to expose
+the credit-consuming preparation route. Each successful text-to-PDF conversion
+uses one Foxit credit; eSign remains disabled.
+
 Run the same quality gate used by CI:
 
 ```bash
@@ -45,15 +49,15 @@ pnpm test:harness
 
 This repository is the public system of record from day zero. The implemented
 foundation includes the deterministic approval envelope, an executable attack
-harness, a Postgres workflow store tested against a real database, and the M3
-Foxit MCP preparation boundary. Production database provisioning, credentialed
-Foxit evidence and eSign dispatch are not complete and are never represented as
+harness, a Postgres workflow store tested against a real database, and a real
+Foxit MCP preparation run with public evidence. Production database
+provisioning and eSign dispatch are not complete and are never represented as
 complete.
 
 Current milestone: **M3 — real Foxit preparation**. The official MCP stdio
-client, reversible tool allowlist, immutable artifact store and sanitized
-provenance contract are implemented. A credentialed Foxit run and its public
-evidence remain pending.
+client, reversible tool allowlist, immutable artifact store, sanitized
+provenance contract and credentialed Foxit run are implemented. The current
+work connects that proven boundary to a judge-visible review experience.
 
 See [docs/roadmap.md](docs/roadmap.md) for milestone gates and evidence required
 before each integration is enabled.

@@ -32,6 +32,9 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [x] Immutable content-addressed artifact storage and provenance contract
 - [x] Fixed tool allowlist, inert prompt data and PDF-signature validation
 - [x] Reproducible MCP call evidence
+- [x] Judge-visible prompt and review surface behind an explicit credit gate
+- [x] Bounded MCP calls, strict tool results and baseline hostile-PDF rejection
+- [ ] Sandboxed parser validation and controlled Foxit document retention cleanup
 
 ## M4 — Human review and eSign
 
