@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-25T18:44:15Z",
+  "operation": "foxit-mcp-text-to-pdf",
+  "result": "success",
+  "foxitMcp": {
+    "repository": "https://github.com/foxitsoftware/foxit-pdf-api-mcp-server",
+    "revision": "db16f9d0f18b878a07f41621e708dbb78bc13e4c",
+    "packageVersion": "0.2.3",
+    "transport": "stdio",
+    "entrypoint": "uv run python -m foxit_pdf_api_mcp_server.main"
+  },
+  "artifact": {
+    "path": "evidence/m3/foxit-text-to-pdf-2026-08-25.pdf",
+    "mediaType": "application/pdf",
+    "pdfVersion": "1.7",
+    "pages": 1,
+    "size": 3215,
+    "sha256": "478b7b9b456b7a612ba14c6045e22fe7ba374a8d90ce64c1a0d8323fbad2cf28"
+  },
+  "calls": [
+    {
+      "sequence": 1,
+      "tool": "upload_document",
+      "argumentsDigest": "2a4a69a16f950cb171ae69f864dadbae7772e9fdbc72d11ac94aa41c71d51a07",
+      "outputDocumentId": "6a8de26ad2447474113efa5b"
+    },
+    {
+      "sequence": 2,
+      "tool": "pdf_from_text",
+      "argumentsDigest": "99bcf334aed5690972d765f0d0677978081829a7e8804b290f8bb7180c65a29f",
+      "inputDocumentId": "6a8de26ad2447474113efa5b",
+      "outputDocumentId": "6a8de26defe54d2a0583a8b0",
+      "taskId": "6a8de26cd2447474113efb12"
+    },
+    {
+      "sequence": 3,
+      "tool": "download_document",
+      "argumentsDigest": "6cc6ed0bfa298458221d1c53eb4f9d8fe8be4499f33fc3093f8a172a7ae058c9",
+      "inputDocumentId": "6a8de26defe54d2a0583a8b0",
+      "outputDocumentId": "6a8de26defe54d2a0583a8b0"
+    }
+  ],
+  "creditUsage": {
+    "expected": 1,
+    "observedInDashboard": null,
+    "note": "Not yet verified in the authenticated Usage view."
+  },
+  "secretsIncluded": false
+}

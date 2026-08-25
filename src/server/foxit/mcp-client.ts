@@ -33,7 +33,7 @@ export function foxitMcpConfigFromEnv(env: NodeJS.ProcessEnv = process.env): Fox
 
   return {
     command: env.FOXIT_MCP_COMMAND?.trim() || "uv",
-    args: (env.FOXIT_MCP_ARGS || "run foxit-pdf-api-mcp-server")
+    args: (env.FOXIT_MCP_ARGS || "run python -m foxit_pdf_api_mcp_server.main")
       .split(" ")
       .filter(Boolean),
     cwd: env.FOXIT_MCP_CWD?.trim() || undefined,
