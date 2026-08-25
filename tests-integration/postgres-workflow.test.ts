@@ -26,6 +26,11 @@ before(async () => {
     "utf8",
   );
   await sql.unsafe(leaseMigration);
+  const fencingMigration = readFileSync(
+    new URL("../db/migrations/003_lease_fencing.sql", import.meta.url),
+    "utf8",
+  );
+  await sql.unsafe(fencingMigration);
 });
 
 beforeEach(async () => {
@@ -60,21 +65,23 @@ test("an ambiguous provider result enters reconciliation and preserves idempoten
   envelope.approvalId = "approval-002";
   await store.createReview(envelope);
   const approvedVersion = await store.approve(envelope, 1);
-  const claim = await store.claimDispatch(
+  await store.claimDispatch(
     envelope,
     documentBytes,
     new Date("2026-08-25T12:05:00.000Z"),
     approvedVersion,
   );
-  const reconcileVersion = await store.markAmbiguous(
-    envelope.workflowId,
-    envelope.tenantId,
-    claim.version,
+  const lease = await store.leaseNextDispatch(
+    "worker-reconcile",
+    new Date("2030-01-01T00:00:00.000Z"),
+    30,
+    3,
   );
-  await store.markSent(
+  assert.ok(lease);
+  const reconcileVersion = await store.markAmbiguous(lease);
+  await store.markReconciledSent(
     envelope.workflowId,
     envelope.tenantId,
-    "reconcile",
     reconcileVersion,
     "foxit-envelope-002",
   );
@@ -83,6 +90,94 @@ test("an ambiguous provider result enters reconciliation and preserves idempoten
   assert.deepEqual(Array.from(rows), [{ state: "sent", provider_envelope_id: "foxit-envelope-002" }]);
   const outbox = await sql`select idempotency_key, status from dispatch_outbox where workflow_id = ${envelope.workflowId}`;
   assert.deepEqual(Array.from(outbox), [{ idempotency_key: "signlatch:approval-002", status: "sent" }]);
+});
+
+test("an expired lease moves to reconciliation and is never re-dispatched", async () => {
+  const envelope = approvalFixture();
+  envelope.workflowId = "supplier-onboarding-47";
+  envelope.approvalId = "approval-006";
+  await store.createReview(envelope);
+  const approvedVersion = await store.approve(envelope, 1);
+  await store.claimDispatch(envelope, documentBytes, new Date("2026-08-25T12:05:00.000Z"), approvedVersion);
+  const lease = await store.leaseNextDispatch(
+    "worker-crashed",
+    new Date("2030-01-01T00:00:00.000Z"),
+    30,
+    3,
+  );
+  assert.ok(lease);
+
+  assert.equal(
+    await store.reconcileNextExpiredLease(new Date("2030-01-01T00:01:00.000Z")),
+    lease.outboxId,
+  );
+  assert.equal(
+    await store.leaseNextDispatch("worker-new", new Date("2030-01-01T00:02:00.000Z"), 30, 3),
+    null,
+  );
+  const rows = await sql`
+    select workflows.state, dispatch_outbox.status, dispatch_outbox.last_error
+    from workflows join dispatch_outbox using (workflow_id)
+    where workflows.workflow_id = ${envelope.workflowId}
+  `;
+  assert.deepEqual(Array.from(rows), [{
+    state: "reconcile",
+    status: "reconcile",
+    last_error: "lease-expired",
+  }]);
+});
+
+test("a late worker cannot complete after its lease was recovered", async () => {
+  const envelope = approvalFixture();
+  envelope.workflowId = "supplier-onboarding-48";
+  envelope.approvalId = "approval-007";
+  await store.createReview(envelope);
+  const approvedVersion = await store.approve(envelope, 1);
+  await store.claimDispatch(envelope, documentBytes, new Date("2026-08-25T12:05:00.000Z"), approvedVersion);
+  const staleLease = await store.leaseNextDispatch(
+    "worker-stale",
+    new Date("2030-01-01T00:00:00.000Z"),
+    30,
+    3,
+  );
+  assert.ok(staleLease);
+  await store.reconcileNextExpiredLease(new Date("2030-01-01T00:01:00.000Z"));
+
+  await assert.rejects(
+    store.markSent(staleLease, "foxit-envelope-late"),
+    /state or version conflict/,
+  );
+});
+
+test("a prior lease generation cannot complete a later attempt", async () => {
+  const envelope = approvalFixture();
+  envelope.workflowId = "supplier-onboarding-49";
+  envelope.approvalId = "approval-008";
+  await store.createReview(envelope);
+  const approvedVersion = await store.approve(envelope, 1);
+  await store.claimDispatch(envelope, documentBytes, new Date("2026-08-25T12:05:00.000Z"), approvedVersion);
+  const firstLease = await store.leaseNextDispatch(
+    "worker-same",
+    new Date("2030-01-01T00:00:00.000Z"),
+    30,
+    3,
+  );
+  assert.ok(firstLease);
+  await store.releaseSafeFailure(firstLease, new Date("2030-01-01T00:01:00.000Z"), "preflight");
+  const secondLease = await store.leaseNextDispatch(
+    "worker-same",
+    new Date("2030-01-01T00:02:00.000Z"),
+    30,
+    3,
+  );
+  assert.ok(secondLease);
+  assert.equal(secondLease.leaseGeneration, firstLease.leaseGeneration + 1);
+
+  await assert.rejects(
+    store.markSent(firstLease, "foxit-envelope-stale"),
+    /no longer owned/,
+  );
+  await store.markSent(secondLease, "foxit-envelope-current");
 });
 
 test("audit events form an unbroken hash chain", async () => {

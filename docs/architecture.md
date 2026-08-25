@@ -74,6 +74,11 @@ to `pending` only when the adapter can prove that no provider request was sent.
 Thrown errors, exhausted retry budgets and ambiguous responses transition the
 workflow to `reconcile`. They never trigger a blind resend.
 
+Every worker completion is fenced by the outbox ID, worker ID and a monotonically
+increasing lease generation. Expired leases move to `reconcile`; a late worker
+cannot complete after recovery, even if the same worker ID acquires a later
+generation.
+
 ## Planned components
 
 - Next.js App Router web application.

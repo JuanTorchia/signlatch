@@ -32,6 +32,7 @@ export type LeasedDispatch = {
   attemptCount: number;
   workflowVersion: number;
   leasedBy: string;
+  leaseGeneration: number;
 };
 
 type LeasedDispatchRow = {
@@ -44,6 +45,7 @@ type LeasedDispatchRow = {
   attempt_count: number;
   workflow_version: number;
   leased_by: string;
+  lease_generation: string | number;
 };
 
 export class PostgresWorkflowStore {
@@ -140,22 +142,79 @@ export class PostgresWorkflowStore {
     });
   }
 
-  async markAmbiguous(workflowId: string, tenantId: string, expectedVersion: number): Promise<number> {
+  async markAmbiguous(lease: LeasedDispatch): Promise<number> {
     return this.sql.begin(async (tx) => {
-      const workflow = await this.lockExpected(tx, workflowId, tenantId, "dispatching", expectedVersion);
+      const workflow = await this.lockExpected(
+        tx,
+        lease.workflowId,
+        lease.tenantId,
+        "dispatching",
+        lease.workflowVersion,
+      );
       assertWorkflowTransition(workflow.state, "reconcile");
       const nextVersion = workflow.version + 1;
-      await tx`
-        update workflows set state = 'reconcile', version = ${nextVersion}, updated_at = now()
-        where workflow_id = ${workflowId}
-      `;
-      await tx`
+      const result = await tx`
         update dispatch_outbox
         set status = 'reconcile', leased_by = null, lease_expires_at = null
-        where workflow_id = ${workflowId} and status = 'processing'
+        where outbox_id = ${lease.outboxId} and workflow_id = ${lease.workflowId}
+          and status = 'processing' and leased_by = ${lease.leasedBy}
+          and lease_generation = ${lease.leaseGeneration}
       `;
-      await this.appendAudit(tx, workflowId, tenantId, "dispatch.ambiguous", "dispatcher", {});
+      if (result.count !== 1) throw new Error("Dispatch lease is no longer owned by this worker");
+      await tx`
+        update workflows set state = 'reconcile', version = ${nextVersion}, updated_at = now()
+        where workflow_id = ${lease.workflowId}
+      `;
+      await this.appendAudit(tx, lease.workflowId, lease.tenantId, "dispatch.ambiguous", "dispatcher", {
+        leaseGeneration: lease.leaseGeneration,
+        outboxId: lease.outboxId,
+      });
       return nextVersion;
+    });
+  }
+
+  async reconcileNextExpiredLease(now: Date): Promise<string | null> {
+    return this.sql.begin(async (tx) => {
+      const rows = await tx<(LeasedDispatchRow & { version: number })[]>`
+        select outbox.outbox_id, outbox.workflow_id, outbox.tenant_id,
+          outbox.approval_id, outbox.idempotency_key, outbox.payload,
+          outbox.attempt_count, outbox.leased_by, outbox.lease_generation,
+          workflows.version, workflows.version as workflow_version
+        from dispatch_outbox as outbox
+        join workflows on workflows.workflow_id = outbox.workflow_id
+          and workflows.tenant_id = outbox.tenant_id
+        where outbox.status = 'processing' and outbox.lease_expires_at <= ${now}
+          and workflows.state = 'dispatching'
+        order by outbox.lease_expires_at, outbox.created_at
+        for update of workflows, outbox skip locked
+        limit 1
+      `;
+      const expired = rows[0];
+      if (!expired) return null;
+
+      const nextVersion = expired.version + 1;
+      const result = await tx`
+        update dispatch_outbox
+        set status = 'reconcile', leased_by = null, lease_expires_at = null,
+          last_error = 'lease-expired'
+        where outbox_id = ${expired.outbox_id} and status = 'processing'
+          and lease_generation = ${expired.lease_generation}
+      `;
+      if (result.count !== 1) throw new Error("Expired lease changed during recovery");
+      await tx`
+        update workflows set state = 'reconcile', version = ${nextVersion}, updated_at = now()
+        where workflow_id = ${expired.workflow_id} and tenant_id = ${expired.tenant_id}
+          and state = 'dispatching' and version = ${expired.version}
+      `;
+      await this.appendAudit(
+        tx,
+        expired.workflow_id,
+        expired.tenant_id,
+        "dispatch.lease_expired",
+        "lease-sweeper",
+        { leaseGeneration: expired.lease_generation, outboxId: expired.outbox_id },
+      );
+      return expired.outbox_id;
     });
   }
 
@@ -182,7 +241,8 @@ export class PostgresWorkflowStore {
         update dispatch_outbox as outbox
         set status = 'processing', leased_by = ${workerId},
             lease_expires_at = ${now} + (${leaseSeconds} * interval '1 second'),
-            attempt_count = outbox.attempt_count + 1
+            attempt_count = outbox.attempt_count + 1,
+            lease_generation = outbox.lease_generation + 1
         from candidate, workflows
         where outbox.outbox_id = candidate.outbox_id
           and workflows.workflow_id = outbox.workflow_id
@@ -190,7 +250,7 @@ export class PostgresWorkflowStore {
         returning outbox.outbox_id, outbox.workflow_id, outbox.tenant_id,
           outbox.approval_id, outbox.idempotency_key, outbox.payload,
           outbox.attempt_count, workflows.version as workflow_version,
-          outbox.leased_by
+          outbox.leased_by, outbox.lease_generation
       `;
       const row = rows[0];
       if (!row) return null;
@@ -204,6 +264,7 @@ export class PostgresWorkflowStore {
         attemptCount: row.attempt_count,
         workflowVersion: row.workflow_version,
         leasedBy: row.leased_by,
+        leaseGeneration: Number(row.lease_generation),
       };
     });
   }
@@ -227,6 +288,7 @@ export class PostgresWorkflowStore {
             lease_expires_at = null, last_error = ${errorCode}
         where outbox_id = ${lease.outboxId} and status = 'processing'
           and leased_by = ${lease.leasedBy}
+          and lease_generation = ${lease.leaseGeneration}
       `;
       if (result.count !== 1) throw new Error("Dispatch lease is no longer owned by this worker");
       await this.appendAudit(tx, lease.workflowId, lease.tenantId, "dispatch.safe_retry_scheduled", "dispatcher", {
@@ -238,28 +300,62 @@ export class PostgresWorkflowStore {
     });
   }
 
-  async markSent(
+  async markSent(lease: LeasedDispatch, providerEnvelopeId: string): Promise<number> {
+    return this.sql.begin(async (tx) => {
+      const workflow = await this.lockExpected(
+        tx,
+        lease.workflowId,
+        lease.tenantId,
+        "dispatching",
+        lease.workflowVersion,
+      );
+      assertWorkflowTransition(workflow.state, "sent");
+      const nextVersion = workflow.version + 1;
+      const result = await tx`
+        update dispatch_outbox set status = 'sent', processed_at = now(),
+          leased_by = null, lease_expires_at = null
+        where outbox_id = ${lease.outboxId} and workflow_id = ${lease.workflowId}
+          and status = 'processing' and leased_by = ${lease.leasedBy}
+          and lease_generation = ${lease.leaseGeneration}
+      `;
+      if (result.count !== 1) throw new Error("Dispatch lease is no longer owned by this worker");
+      await tx`
+        update workflows set state = 'sent', version = ${nextVersion},
+          provider_envelope_id = ${providerEnvelopeId}, updated_at = now()
+        where workflow_id = ${lease.workflowId}
+      `;
+      await this.appendAudit(tx, lease.workflowId, lease.tenantId, "dispatch.sent", "dispatcher", {
+        leaseGeneration: lease.leaseGeneration,
+        outboxId: lease.outboxId,
+        providerEnvelopeId,
+      });
+      return nextVersion;
+    });
+  }
+
+  async markReconciledSent(
     workflowId: string,
     tenantId: string,
-    from: "dispatching" | "reconcile",
     expectedVersion: number,
     providerEnvelopeId: string,
   ): Promise<number> {
     return this.sql.begin(async (tx) => {
-      const workflow = await this.lockExpected(tx, workflowId, tenantId, from, expectedVersion);
+      const workflow = await this.lockExpected(tx, workflowId, tenantId, "reconcile", expectedVersion);
       assertWorkflowTransition(workflow.state, "sent");
       const nextVersion = workflow.version + 1;
+      const result = await tx`
+        update dispatch_outbox set status = 'sent', processed_at = now()
+        where workflow_id = ${workflowId} and tenant_id = ${tenantId} and status = 'reconcile'
+      `;
+      if (result.count !== 1) throw new Error("Reconciliation outbox item does not exist");
       await tx`
         update workflows set state = 'sent', version = ${nextVersion},
           provider_envelope_id = ${providerEnvelopeId}, updated_at = now()
         where workflow_id = ${workflowId}
       `;
-      await tx`
-        update dispatch_outbox set status = 'sent', processed_at = now(),
-          leased_by = null, lease_expires_at = null
-        where workflow_id = ${workflowId} and status in ('pending', 'processing', 'reconcile')
-      `;
-      await this.appendAudit(tx, workflowId, tenantId, "dispatch.sent", "dispatcher", { providerEnvelopeId });
+      await this.appendAudit(tx, workflowId, tenantId, "dispatch.reconciled_sent", "reconciler", {
+        providerEnvelopeId,
+      });
       return nextVersion;
     });
   }

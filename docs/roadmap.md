@@ -22,7 +22,8 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [ ] Production database provisioning and migration automation
 - [x] Outbox worker lease and retry budget
 - [x] Fail-closed provider adapter contract
-- [ ] Expired-lease sweeper and provider reconciliation adapter
+- [x] Expired-lease recovery with generation fencing
+- [ ] Provider reconciliation adapter
 
 ## M3 — Real Foxit preparation
 

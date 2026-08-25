@@ -38,13 +38,7 @@ export async function processNextDispatch(
   }
 
   if (result.status === "sent") {
-    await store.markSent(
-      lease.workflowId,
-      lease.tenantId,
-      "dispatching",
-      lease.workflowVersion,
-      result.providerEnvelopeId,
-    );
+    await store.markSent(lease, result.providerEnvelopeId);
     return "sent";
   }
 
@@ -54,6 +48,6 @@ export async function processNextDispatch(
     return "retry-scheduled";
   }
 
-  await store.markAmbiguous(lease.workflowId, lease.tenantId, lease.workflowVersion);
+  await store.markAmbiguous(lease);
   return "reconcile";
 }

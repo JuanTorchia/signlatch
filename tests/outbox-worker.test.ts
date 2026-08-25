@@ -16,6 +16,7 @@ function storeFixture() {
     attemptCount: 1,
     workflowVersion: 3,
     leasedBy: "worker-1",
+    leaseGeneration: 1,
   };
   const store = {
     async leaseNextDispatch() {
