@@ -11,7 +11,10 @@ Plain-language request → Agent → Foxit PDF MCP → Policy engine
 → Human approval latch → Foxit eSign → Verified audit trail
 ```
 
-See [docs/architecture.md](docs/architecture.md) for trust boundaries and the planned implementation.
+See [docs/architecture.md](docs/architecture.md) for trust boundaries and the
+implementation sequence. Architectural decisions are recorded in
+[docs/decisions](docs/decisions), and the public security model lives in
+[docs/threat-model.md](docs/threat-model.md).
 
 ## Development
 
@@ -22,9 +25,29 @@ pnpm dev
 
 Then open <http://localhost:3000>.
 
-## Status
+Run the same quality gate used by CI:
 
-The public foundation and architecture are in place. Foxit credentials, MCP orchestration, policy evaluation, approval persistence and eSign dispatch are the next milestones.
+```bash
+pnpm check
+```
+
+Run the human-authority attack harness directly:
+
+```bash
+pnpm test:harness
+```
+
+## Public build status
+
+This repository is the public system of record from day zero. The first
+implemented slice is the deterministic approval envelope and an executable
+attack harness. Foxit credentials, MCP orchestration, durable persistence and
+eSign dispatch are not implemented yet and are never represented as complete.
+
+Current milestone: **M1 — authority contract and negative-test harness**.
+
+See [docs/roadmap.md](docs/roadmap.md) for milestone gates and evidence required
+before each integration is enabled.
 
 ## Security
 
@@ -33,3 +56,7 @@ The public foundation and architecture are in place. Foxit credentials, MCP orch
 - Approval will bind to an artifact hash and exact recipient set.
 - Webhook authenticity will be verified before state changes.
 - The product provides workflow risk signals, not legal advice.
+
+Security findings are welcome through the process described in
+[SECURITY.md](SECURITY.md). Please do not include documents, credentials or
+personal data in public issues.

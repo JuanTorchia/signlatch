@@ -34,10 +34,40 @@ The agent may prepare documents, propose recipients and fields, run deterministi
 ## Approval invariant
 
 ```text
-SHA-256(document) + canonical recipients + signer fields + policy version
+SHA-256("signlatch:approval:v1\n" + canonical-json(approval envelope))
 ```
 
-Any change invalidates the approval and returns the workflow to review. The eSign dispatcher consumes the approval exactly once.
+The versioned envelope binds the tenant, workflow, immutable document byte hash,
+ordered recipients, signer fields, delivery options, policy ruleset hash,
+approval identity, approver identity, expiry and Foxit account. The canonical
+encoding is implemented in `src/core/approval/envelope.ts` and locked by golden
+vectors.
+
+Any bound change invalidates the approval and returns the workflow to review.
+The future eSign dispatcher must atomically consume the approval exactly once.
+An ambiguous provider timeout enters reconciliation and must never cause a new
+send with a new idempotency key.
+
+## State model
+
+```mermaid
+stateDiagram-v2
+  [*] --> preparing
+  preparing --> review
+  review --> approved: authorized human approves exact envelope
+  approved --> review: bound value changes or approval expires
+  approved --> dispatching: atomic compare-and-swap
+  dispatching --> sent: provider envelope recorded
+  dispatching --> reconcile: provider result is ambiguous
+  reconcile --> sent: existing provider envelope found
+  reconcile --> failed: provider confirms no envelope
+  sent --> completed: verified terminal webhook
+```
+
+The application must fail closed for transitions not shown here. The dispatcher
+will use a durable outbox and a stable provider idempotency key derived from the
+approval ID. The current in-memory harness demonstrates semantics only; it is
+not production persistence.
 
 ## Planned components
 
@@ -58,3 +88,10 @@ Any change invalidates the approval and returns the workflow to review. The eSig
 - Successful direct eSign handoff after approval.
 - Verified completion webhook, executed PDF and activity history.
 - Negative tests for changed artifacts, changed recipients, replayed approvals and invalid webhook signatures.
+
+## Architecture gates
+
+The dispatcher cannot be enabled until the approval contract, state transition
+contract, authentication boundary, immutable artifact store and durable
+idempotency design have tests. Webhook processing additionally requires raw-body
+signature fixtures and replay tests. See [roadmap.md](roadmap.md).

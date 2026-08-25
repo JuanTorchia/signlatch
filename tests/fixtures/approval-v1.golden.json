@@ -1,0 +1,6 @@
+{
+  "description": "Canonical approval envelope v1 reference vector",
+  "domain": "signlatch:approval:v1",
+  "canonical": "{\"approvalId\":\"approval-001\",\"approverId\":\"user-procurement-lead\",\"createdAt\":\"2026-08-25T12:00:00.000Z\",\"delivery\":{\"message\":\"Please review and sign the attached agreement.\",\"subject\":\"Supplier agreement for signature\"},\"documentSha256\":\"fb00ce2d6803b713a8f529a10f246d030ad99d6f782dc5da8ccacd2102c5a6d3\",\"expiresAt\":\"2026-08-25T12:15:00.000Z\",\"fields\":[{\"id\":\"supplier-signature\",\"page\":3,\"recipientEmail\":\"supplier@example.com\",\"type\":\"signature\",\"x\":96,\"y\":640}],\"policyRulesetSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"provider\":\"foxit-esign\",\"providerAccountId\":\"foxit-account-production\",\"recipients\":[{\"authentication\":\"email\",\"email\":\"supplier@example.com\",\"name\":\"Supplier Signer\",\"order\":1,\"role\":\"signer\"}],\"schema\":\"signlatch.approval.v1\",\"tenantId\":\"tenant-acme\",\"workflowId\":\"supplier-onboarding-42\"}",
+  "sha256": "9779a1a8c5fca18598dc0e50b8604f5bd9a352dee4adb1366a733cabe0071e63"
+}
