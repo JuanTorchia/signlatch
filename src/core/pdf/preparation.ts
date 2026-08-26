@@ -24,6 +24,7 @@ export type ToolResult = {
 
 export interface PdfToolCaller {
   call(call: ToolCall): Promise<ToolResult>;
+  scheduleRemoteCleanup?(documentIds: string[], deadline: Date): Promise<void>;
   close?(): Promise<void>;
 }
 

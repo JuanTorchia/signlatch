@@ -34,21 +34,22 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [x] Reproducible MCP call evidence
 - [x] Judge-visible prompt and review surface behind an explicit credit gate
 - [x] Bounded MCP calls, strict tool results and baseline hostile-PDF rejection
-- [ ] Sandboxed parser validation and controlled Foxit document retention cleanup
+- [x] Sandboxed parser validation and scheduled Foxit document retention cleanup
 
 ## M4 — Human review and eSign
 
-- [ ] Authenticated and authorized approval surface
-- [ ] Complete bound payload and material diff shown to the approver
-- [ ] Isolated direct Foxit eSign adapter
-- [ ] Mutation and replay blocked in the real workflow
+- [x] Authenticated and authorized approval surface
+- [x] Complete bound payload and material diff shown to the approver
+- [x] Isolated direct Foxit eSign adapter (fixture-tested; live gate disabled)
+- [x] Mutation and replay blocked in the durable workflow
 - [ ] Human signer completes the provider flow
 
 ## M5 — Verified completion and submission evidence
 
-- [ ] Raw-body webhook verification and replay defense
-- [ ] Monotonic event processing and provider correlation
-- [ ] Executed PDF retrieval and digest
+- [x] Raw-body webhook verification and event replay defense
+- [x] Monotonic event processing and provider correlation
+- [x] Executed PDF retrieval, validation, storage and digest implementation
 - [ ] End-to-end browser journey and negative demo
-- [ ] Reproducible setup, architecture diagram and three-minute demo
+- [x] Reproducible setup and architecture documentation
+- [ ] Recorded demo video
 - [ ] Concrete procurement buyer story with measurable value

@@ -1,0 +1,33 @@
+{
+  "schema": "signlatch.approval-harness-evidence.v1",
+  "claim": "fixture-demonstrated",
+  "generatedAt": "2026-08-26T01:30:20.883Z",
+  "originalReviewDigest": "1865c737b90b15111ceb9eafbc5940cd206f93e413a36f74b91aa18f47d0f177",
+  "results": [
+    {
+      "category": "artifact",
+      "mutation": "Exact review changed after human approval",
+      "restoration": "Exact approval has already been consumed"
+    },
+    {
+      "category": "recipient",
+      "mutation": "Exact review changed after human approval",
+      "restoration": "Exact approval has already been consumed"
+    },
+    {
+      "category": "field",
+      "mutation": "Exact review changed after human approval",
+      "restoration": "Exact approval has already been consumed"
+    },
+    {
+      "category": "finding",
+      "mutation": "Exact review changed after human approval",
+      "restoration": "Exact approval has already been consumed"
+    },
+    {
+      "category": "intent",
+      "mutation": "Exact review changed after human approval",
+      "restoration": "Exact approval has already been consumed"
+    }
+  ]
+}

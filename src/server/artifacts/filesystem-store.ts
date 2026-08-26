@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type {
@@ -7,12 +7,18 @@ import type {
   ProvenanceManifest,
 } from "@/core/pdf/preparation";
 import { sha256 } from "@/core/pdf/preparation";
+import { ArtifactIntegrityError, ArtifactNotFoundError } from "./artifact-errors";
+import { createQpdfRunner, SandboxedPdfValidator } from "./pdf-validator";
 
 export class FilesystemArtifactStore implements ImmutableArtifactStore {
-  constructor(private readonly root: string) {}
+  constructor(
+    private readonly root: string,
+    private readonly validator = new SandboxedPdfValidator(createQpdfRunner()),
+  ) {}
 
   async putPdf(bytes: Uint8Array): Promise<ArtifactRecord> {
     validateReviewablePdf(bytes);
+    await this.validator.validate(bytes);
 
     const digest = sha256(bytes);
     const storageKey = path.join("sha256", digest.slice(0, 2), `${digest}.pdf`);
@@ -36,6 +42,26 @@ export class FilesystemArtifactStore implements ImmutableArtifactStore {
     };
   }
 
+  async getVerifiedPdf(digest: string): Promise<Buffer> {
+    if (!/^[a-f0-9]{64}$/.test(digest)) throw new ArtifactNotFoundError();
+    const storageKey = path.join("sha256", digest.slice(0, 2), `${digest}.pdf`);
+    const absolutePath = path.join(this.root, storageKey);
+    let bytes: Buffer;
+    try {
+      bytes = await readFile(absolutePath);
+    } catch {
+      throw new ArtifactNotFoundError();
+    }
+    if (sha256(bytes) !== digest) {
+      const quarantine = path.join(this.root, "quarantine", `${digest}-${Date.now()}.pdf`);
+      await mkdir(path.dirname(quarantine), { recursive: true });
+      await rename(absolutePath, quarantine).catch(() => undefined);
+      throw new ArtifactIntegrityError();
+    }
+    await this.validator.validate(bytes);
+    return bytes;
+  }
+
   async putManifest(manifest: ProvenanceManifest): Promise<string> {
     const storageKey = path.join("manifests", `${manifest.manifestSha256}.json`);
     const absolutePath = path.join(this.root, storageKey);
@@ -52,7 +78,7 @@ export class FilesystemArtifactStore implements ImmutableArtifactStore {
   }
 }
 
-const MAX_PDF_BYTES = 20 * 1024 * 1024;
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
 const FORBIDDEN_PDF_FEATURES = [
   "/JavaScript",
   "/OpenAction",

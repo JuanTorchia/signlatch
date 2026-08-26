@@ -44,7 +44,7 @@ encoding is implemented in `src/core/approval/envelope.ts` and locked by golden
 vectors.
 
 Any bound change invalidates the approval and returns the workflow to review.
-The future eSign dispatcher must atomically consume the approval exactly once.
+The eSign dispatch store atomically consumes the approval exactly once.
 An ambiguous provider timeout enters reconciliation and must never cause a new
 send with a new idempotency key.
 
@@ -65,9 +65,9 @@ stateDiagram-v2
 ```
 
 The application must fail closed for transitions not shown here. The dispatcher
-will use a durable outbox and a stable provider idempotency key derived from the
-approval ID. The current in-memory harness demonstrates semantics only; it is
-not production persistence.
+uses a durable outbox and a stable provider idempotency key derived from the
+approval digest. The in-memory harness demonstrates semantics; PostgreSQL integration
+tests prove durable invalidation, consumption, and concurrent enqueue behavior.
 
 Outbox workers acquire rows with `FOR UPDATE SKIP LOCKED`. A failure may return
 to `pending` only when the adapter can prove that no provider request was sent.
@@ -111,3 +111,13 @@ The dispatcher cannot be enabled until the approval contract, state transition
 contract, authentication boundary, immutable artifact store and durable
 idempotency design have tests. Webhook processing additionally requires raw-body
 signature fixtures and replay tests. See [roadmap.md](roadmap.md).
+
+## Status as of 2026-08-26
+
+The exact approval v2 contract, durable review versions, one-way approval,
+invalidation, atomic dispatch enqueue, stable provider key, raw-body webhook verifier,
+monotonic event store, authorized timeline, and executed-document verifier are
+implemented and fixture-tested. Foxit eSign remains disabled by default. No provider
+delivery or completed-signature claim is live-demonstrated until the separately
+authorized sandbox journey records a provider envelope, authenticated events, and the
+independently hashed executed PDF.

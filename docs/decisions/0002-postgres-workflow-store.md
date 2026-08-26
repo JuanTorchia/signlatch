@@ -26,4 +26,5 @@ integration tests against a real Postgres service rather than a mock database.
 - Production deployment requires managed Postgres and migration automation.
 - Optimistic version checks make stale clients fail closed.
 - Unique constraints provide a second defense against duplicate approval use.
-- The outbox worker and provider adapter remain separate future components.
+- Superseded implementation note (2026-08-26): the outbox worker and isolated provider
+  adapter now exist; deployment and live dispatch remain separate release gates.

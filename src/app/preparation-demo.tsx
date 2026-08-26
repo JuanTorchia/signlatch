@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 
+import { PUBLIC_SHOWCASE } from "@/core/evidence/showcase";
+
 type PreparationResult = {
   artifact: { sha256: string; size: number; url: string };
   manifest: {
@@ -19,7 +21,7 @@ Purpose: Evaluation draft prepared through Foxit PDF Services.
 Payment terms: Net 30.
 Authority notice: This draft is not approved and must not be sent for signature without explicit human approval.`;
 
-export function PreparationDemo() {
+export function PreparationDemo({ authenticated = false, csrfToken = "" }: { authenticated?: boolean; csrfToken?: string }) {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [result, setResult] = useState<PreparationResult | null>(null);
   const [error, setError] = useState("");
@@ -33,7 +35,11 @@ export function PreparationDemo() {
     try {
       const response = await fetch("/api/prepare", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+          "X-SignLatch-CSRF": csrfToken,
+        },
         body: JSON.stringify({ prompt }),
       });
       const payload = (await response.json()) as PreparationResult | { error?: string };
@@ -59,6 +65,16 @@ export function PreparationDemo() {
       </div>
 
       <div className="demo-grid">
+        {!authenticated ? (
+          <div className="prompt-panel" aria-label="Read-only public fixture">
+            <span className="live-proof">Sanitized fixture · zero external effects</span>
+            <h3>{PUBLIC_SHOWCASE.request}</h3>
+            <p>Artifact SHA-256: <code>{PUBLIC_SHOWCASE.artifactSha256}</code></p>
+            <p>Recipient: {PUBLIC_SHOWCASE.recipient}</p>
+            <p>{PUBLIC_SHOWCASE.findings.join(" · ")}</p>
+            <a className="button button-secondary" href="/api/auth/login">Sign in for the private workspace</a>
+          </div>
+        ) : (
         <form className="prompt-panel" onSubmit={submit}>
           <label htmlFor="document-prompt">Document request</label>
           <textarea
@@ -76,6 +92,7 @@ export function PreparationDemo() {
           </div>
           {error ? <p className="demo-error" role="alert">{error}</p> : null}
         </form>
+        )}
 
         <div className="proof-panel" aria-live="polite">
           {result ? (
@@ -91,11 +108,17 @@ export function PreparationDemo() {
               </button>
               <p className="latch-reason">{result.authority.reason}</p>
             </>
-          ) : (
+          ) : authenticated ? (
             <div className="proof-empty">
               <span>01</span>
               <h3>No artifact prepared yet</h3>
               <p>The PDF, its exact hash and Foxit provenance will appear here.</p>
+            </div>
+          ) : (
+            <div className="proof-empty">
+              <span>00</span>
+              <h3>Public showcase is read-only</h3>
+              <p>No control on this page can consume Foxit credits or access private artifacts.</p>
             </div>
           )}
         </div>

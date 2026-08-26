@@ -22,6 +22,7 @@ export async function prepareTextPdf(
   const workspace = await mkdtemp(path.join(os.tmpdir(), "signlatch-foxit-"));
   const outputPath = path.join(workspace, "prepared.pdf");
   const provenance: ProvenanceEntry[] = [];
+  const remoteDocumentIds = new Set<string>();
 
   const invoke = async (call: ToolCall, safeArguments: Record<string, unknown>) => {
     const result = await caller.call(call);
@@ -49,6 +50,7 @@ export async function prepareTextPdf(
     { contentSha256: digestToolArguments({ documentText }), fileName: "signlatch-request.txt" },
   );
     if (!upload.documentId) throw new Error("Foxit upload did not return documentId");
+    remoteDocumentIds.add(upload.documentId);
 
     const converted = await invoke(
       { name: "pdf_from_text", arguments: { documentId: upload.documentId } },
@@ -57,8 +59,9 @@ export async function prepareTextPdf(
     if (!converted.resultDocumentId) {
       throw new Error("Foxit conversion did not return resultDocumentId");
     }
+    remoteDocumentIds.add(converted.resultDocumentId);
 
-    await invoke(
+    const download = await invoke(
       {
         name: "download_document",
         arguments: { documentId: converted.resultDocumentId, outputPath },
@@ -67,12 +70,21 @@ export async function prepareTextPdf(
     );
 
     const pdfBytes = await readFile(outputPath);
+    if (download.size !== undefined && download.size !== pdfBytes.byteLength) {
+      throw new Error("Foxit download size does not match the actual artifact bytes");
+    }
     const artifact = await artifacts.putPdf(pdfBytes);
     const manifest = createProvenanceManifest(artifact.sha256, provenance);
     await artifacts.putManifest?.(manifest);
     return { artifact, provenance, manifest };
   } finally {
     try {
+      if (remoteDocumentIds.size) {
+        await caller.scheduleRemoteCleanup?.(
+          [...remoteDocumentIds],
+          new Date(Date.now() + 24 * 60 * 60 * 1000),
+        );
+      }
       await caller.close?.();
     } finally {
       await rm(workspace, { recursive: true, force: true });

@@ -14,6 +14,7 @@ import {
 } from "../src/core/pdf/preparation";
 import { prepareTextPdf } from "../src/server/foxit/prepare-text-pdf";
 import { FilesystemArtifactStore } from "../src/server/artifacts/filesystem-store";
+import { SandboxedPdfValidator } from "../src/server/artifacts/pdf-validator";
 
 const minimalPdf = Buffer.from(
   "%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\nstartxref\n9\n%%EOF\n",
@@ -36,6 +37,7 @@ class MemoryArtifacts implements ImmutableArtifactStore {
 
 test("runs a fixed, reversible Foxit tool sequence and records provenance", async () => {
   const calls: ToolCall[] = [];
+  const cleanupIds: string[][] = [];
   const caller: PdfToolCaller = {
     async call(call) {
       calls.push(call);
@@ -47,6 +49,9 @@ test("runs a fixed, reversible Foxit tool sequence and records provenance", asyn
         writeFile(String(call.arguments.outputPath), minimalPdf),
       );
       return { success: true, documentId: "pdf-1", size: minimalPdf.length };
+    },
+    async scheduleRemoteCleanup(documentIds) {
+      cleanupIds.push(documentIds);
     },
   };
 
@@ -62,6 +67,19 @@ test("runs a fixed, reversible Foxit tool sequence and records provenance", asyn
   assert.equal(result.manifest.artifactSha256, result.artifact.sha256);
   assert.match(result.manifest.manifestSha256, /^[a-f0-9]{64}$/);
   assert.ok(!JSON.stringify(result.provenance).includes("Prepare a supplier agreement"));
+  assert.deepEqual(cleanupIds, [["source-1", "pdf-1"]]);
+});
+
+test("rejects provider size metadata that differs from actual bytes", async () => {
+  const caller: PdfToolCaller = {
+    async call(call) {
+      if (call.name === "upload_document") return { success: true, documentId: "source-1" };
+      if (call.name === "pdf_from_text") return { success: true, resultDocumentId: "pdf-1" };
+      await import("node:fs/promises").then(({ writeFile }) => writeFile(String(call.arguments.outputPath), minimalPdf));
+      return { success: true, documentId: "pdf-1", size: minimalPdf.length + 1 };
+    },
+  };
+  await assert.rejects(prepareTextPdf("Prepare supplier agreement", caller, new MemoryArtifacts()), /size does not match/);
 });
 
 test("treats document text as inert data and blocks out-of-catalog tools", () => {
@@ -81,7 +99,10 @@ test("rejects empty, null-containing, and oversized prompts", () => {
 test("stores PDF bytes under an immutable content-addressed key", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "signlatch-artifacts-test-"));
   try {
-    const store = new FilesystemArtifactStore(root);
+    const store = new FilesystemArtifactStore(
+      root,
+      new SandboxedPdfValidator(async () => ({ valid: true, encrypted: false, pages: 1, outputBytes: 16 })),
+    );
     const first = await store.putPdf(minimalPdf);
     const second = await store.putPdf(minimalPdf);
 

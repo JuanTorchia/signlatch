@@ -4,6 +4,8 @@ import {
   isApprovalFresh,
   type ApprovalEnvelopeV1,
 } from "./envelope";
+import { assertExactApprovalFresh, exactApprovalDigest, type ExactApprovalV2 } from "./envelope-v2";
+import type { ReviewSnapshot } from "../agreement/review";
 
 type ApprovalRecord = {
   digest: string;
@@ -12,6 +14,7 @@ type ApprovalRecord = {
 
 export class ApprovalHarness {
   private readonly approvals = new Map<string, ApprovalRecord>();
+  private readonly exactApprovals = new Map<string, ApprovalRecord>();
 
   approve(envelope: ApprovalEnvelopeV1): string {
     const digest = approvalDigest(envelope);
@@ -33,5 +36,25 @@ export class ApprovalHarness {
 
     record.consumed = true;
     return `signlatch:${envelope.approvalId}`;
+  }
+
+  approveExact(approval: ExactApprovalV2, snapshot: ReviewSnapshot): string {
+    if (approval.reviewVersion < 1 || approval.reviewDigest !== snapshot.digest) throw new Error("Review snapshot is stale");
+    const digest = exactApprovalDigest(approval);
+    this.exactApprovals.set(approval.nonce, { digest, consumed: false });
+    return digest;
+  }
+
+  consumeExact(approval: ExactApprovalV2, snapshot: ReviewSnapshot, now: Date): string {
+    const record = this.exactApprovals.get(approval.nonce);
+    if (!record) throw new Error("Exact approval does not exist");
+    if (record.consumed) throw new Error("Exact approval has already been consumed");
+    assertExactApprovalFresh(approval, now);
+    if (approval.reviewDigest !== snapshot.digest || exactApprovalDigest(approval) !== record.digest) {
+      record.consumed = true;
+      throw new Error("Exact review changed after human approval");
+    }
+    record.consumed = true;
+    return `signlatch:v2:${record.digest}`;
   }
 }

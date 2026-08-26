@@ -20,14 +20,14 @@ untrusted until their raw request signature and freshness are verified.
 
 | Threat | Required control | Current state |
 | --- | --- | --- |
-| Artifact mutation after review | Immutable bytes and pre-dispatch rehash | Harness only |
-| Recipient or role substitution | Canonical bound recipient list | Harness only |
-| Approval replay or double send | Atomic consumption, outbox and idempotency | Semantics tested; durable store pending |
-| Prompt injection from PDF content | Sandboxed parsing and data/instruction separation | Pending |
-| Agent access to eSign credentials | Separate identity outside agent tools | Architecture gate |
-| Forged or replayed webhook | Raw-body HMAC, timestamp and event replay store | Pending |
-| Audit tampering | Append-only or tamper-evident event chain | Pending |
-| Cross-tenant authorization | Tenant-bound approval and authorization checks | Contract only |
+| Artifact mutation after review | Immutable bytes and pre-dispatch rehash | Implemented and integration-tested |
+| Recipient or role substitution | Canonical bound recipient list | Implemented and fixture-demonstrated |
+| Approval replay or double send | Atomic consumption, outbox and idempotency | Implemented and race-tested |
+| Prompt injection from PDF content | Sandboxed parsing and data/instruction separation | Implemented with hostile fixtures |
+| Agent access to eSign credentials | Separate server-only adapter outside agent tools | Implemented; live credentials disabled |
+| Forged or replayed webhook | Raw-body HMAC, rotation and event replay store | Implemented; live provider proof pending |
+| Audit tampering | Hash-linked event chain | Implemented and mutation-tested |
+| Cross-tenant authorization | Tenant-bound approval and current membership checks | Implemented and integration-tested |
 
 ## Security claim policy
 

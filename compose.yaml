@@ -1,0 +1,49 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env.local
+    environment:
+      DATABASE_URL: postgresql://signlatch:${POSTGRES_PASSWORD}@postgres:5432/signlatch
+      SIGNLATCH_ARTIFACT_ROOT: /var/lib/signlatch/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - artifacts:/var/lib/signlatch/artifacts
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+  worker:
+    build: .
+    profiles: ["dispatch-worker"]
+    restart: unless-stopped
+    command: ["pnpm", "worker:start"]
+    env_file: .env.local
+    environment:
+      DATABASE_URL: postgresql://signlatch:${POSTGRES_PASSWORD}@postgres:5432/signlatch
+      SIGNLATCH_ARTIFACT_ROOT: /var/lib/signlatch/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - artifacts:/var/lib/signlatch/artifacts
+  postgres:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: signlatch
+      POSTGRES_USER: signlatch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U signlatch -d signlatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+volumes:
+  artifacts:
+  postgres-data:

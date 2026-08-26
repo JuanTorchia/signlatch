@@ -81,7 +81,7 @@ The application uses a fixed allowlist:
 User text is data, never a tool-selection instruction. The MCP catalog is not
 exposed to a language model, `delete_document` is excluded, output must begin
 with a PDF signature, and the final bytes are stored by SHA-256 in an immutable
-artifact store. Foxit eSign remains a separate future adapter behind the human
+artifact store. Foxit eSign remains a separate server-only adapter behind the human
 approval latch.
 
 ## Troubleshooting

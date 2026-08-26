@@ -30,8 +30,9 @@ Real PDF preparation uses Foxit's official Python MCP server. Follow the
 install the server and configure local secrets.
 
 Set `SIGNLATCH_DEMO_ENABLED=true` only in a trusted local environment to expose
-the credit-consuming preparation route. Each successful text-to-PDF conversion
-uses one Foxit credit; eSign remains disabled.
+the credit-consuming preparation route. The connected dashboard showed one credit for
+the verified conversion on 2026-08-25; pricing and account allowances can change and
+must be rechecked before another live run. eSign enqueue remains independently disabled.
 
 Run the same quality gate used by CI:
 
@@ -48,16 +49,16 @@ pnpm test:harness
 ## Public build status
 
 This repository is the public system of record from day zero. The implemented
-foundation includes the deterministic approval envelope, an executable attack
-harness, a Postgres workflow store tested against a real database, and a real
-Foxit MCP preparation run with public evidence. Production database
-provisioning and eSign dispatch are not complete and are never represented as
-complete.
+foundation includes exact approval v2, a five-category attack harness, durable review
+and dispatch stores race-tested against PostgreSQL, raw-body webhook verification, and
+a real Foxit MCP preparation run with sanitized evidence. The eSign client and completion
+path are fixture-tested but no live eSign delivery is claimed. Production provisioning,
+deployment, and provider dispatch remain separate human gates.
 
-Current milestone: **M3 — real Foxit preparation**. The official MCP stdio
-client, reversible tool allowlist, immutable artifact store, sanitized
-provenance contract and credentialed Foxit run are implemented. The current
-work connects that proven boundary to a judge-visible review experience.
+Current milestone: **M5 — provider closure pending one authorized sandbox journey**.
+The exact human latch, controlled dispatch, authenticated event lifecycle, evidence
+manifest, privacy scan, and judge-visible fixture journey are implemented. Live eSign
+remains disabled by default and cannot be inferred from fixture results.
 
 See [docs/roadmap.md](docs/roadmap.md) for milestone gates and evidence required
 before each integration is enabled.
@@ -75,8 +76,9 @@ The test migration truncates its configured database. Never point
 
 - Credentials remain server-side and are never committed.
 - A generated document is not authorization to send it.
-- Approval will bind to an artifact hash and exact recipient set.
-- Webhook authenticity will be verified before state changes.
+- Approval binds the exact review digest, artifact, recipients, fields, findings, intent, and provenance.
+- Webhook authenticity is verified over bounded raw bytes before parsing or state changes.
+- “Tamper-evident” refers to SignLatch's hash-linked application audit boundary; it is not an external timestamp or immutable-ledger claim.
 - The product provides workflow risk signals, not legal advice.
 
 Security findings are welcome through the process described in

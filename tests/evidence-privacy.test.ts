@@ -1,0 +1,2 @@
+import assert from "node:assert/strict";import test from "node:test";import {privacyFindings,sanitizeEvidence} from "../src/core/evidence/manifest";
+test("evidence sanitization removes secret, PDF text, and raw provider payload fields",()=>{assert.deepEqual(sanitizeEvidence({claim:"safe",clientSecret:"x",nested:{rawBody:"x",documentText:"private"}}),{claim:"safe",nested:{}});assert.equal(privacyFindings("client_secret=oops").length,1);assert.equal(privacyFindings("fixture digest only").length,0);});

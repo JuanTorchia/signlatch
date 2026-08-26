@@ -1,4 +1,6 @@
 import type { LeasedDispatch, PostgresWorkflowStore } from "./postgres-store";
+import type { ESignResult, FoxitESignAdapter } from "../foxit/esign-adapter";
+import type { ESignDispatchStore } from "./esign-dispatch-store";
 
 export type DispatchResult =
   | { status: "sent"; providerEnvelopeId: string }
@@ -7,6 +9,16 @@ export type DispatchResult =
 
 export interface ESignDispatchAdapter {
   send(lease: LeasedDispatch): Promise<DispatchResult>;
+}
+
+export async function processNextExactDispatch(store: ESignDispatchStore, adapter: { send(lease: NonNullable<Awaited<ReturnType<ESignDispatchStore["leaseNext"]>>>): Promise<ESignResult> }, workerId: string, now: Date) {
+  const lease=await store.leaseNext(workerId,now,120);if(!lease)return "idle" as const;let result:ESignResult;try{result=await adapter.send(lease);}catch{result={status:"ambiguous"};}
+  if(result.status==="sent"){await store.markSent(lease,result.providerEnvelopeId,result.correlationId);return "sent" as const;}
+  await store.markReconcile(lease,"correlationId" in result?result.correlationId:undefined);return "reconcile" as const;
+}
+
+export async function reconcileExactDispatch(store: ESignDispatchStore, adapter: FoxitESignAdapter, dispatch:{dispatchId:string;idempotencyKey:string}) {
+  const found=await adapter.findByCorrelation(dispatch.idempotencyKey);if(!found)return "unresolved" as const;await store.resolveReconciliation(dispatch.dispatchId,found.providerEnvelopeId);return "sent" as const;
 }
 
 export type WorkerOptions = {

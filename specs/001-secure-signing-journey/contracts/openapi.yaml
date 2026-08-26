@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info:
+  title: SignLatch Secure Signing Journey
+  version: 1.0.0
+  description: >-
+    Application contract. Every private operation requires an authenticated session,
+    tenant ownership, CSRF protection, and the capability stated by the operation.
+servers:
+  - url: https://signlatch.example
+paths:
+  /api/workflows:
+    post:
+      operationId: createWorkflow
+      summary: Create an owned supplier-agreement workflow
+      x-capability: operator
+      responses:
+        "201": {description: Workflow created}
+        "401": {description: Authentication required}
+        "403": {description: Capability denied}
+  /api/workflows/{workflowId}/prepare:
+    post:
+      operationId: prepareAgreement
+      summary: Validate intent and reserve one bounded Foxit preparation operation
+      x-capability: operator
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202": {description: Preparation reserved or existing operation returned}
+        "409": {description: Workflow state or idempotency conflict}
+        "413": {description: Request exceeds bounded size}
+        "429": {description: Durable tenant budget or concurrency limit reached}
+  /api/workflows/{workflowId}/review:
+    get:
+      operationId: getReview
+      summary: Return the exact current review snapshot and material diff
+      x-capability: operator|approver|auditor
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+      responses:
+        "200": {description: Exact review snapshot}
+        "404": {description: Workflow unavailable to this principal}
+  /api/workflows/{workflowId}/approve:
+    post:
+      operationId: approveReview
+      summary: Bind a human approval to the supplied exact review digest
+      x-capability: approver
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201": {description: One-time approval created}
+        "409": {description: Review digest is stale or incomplete}
+  /api/workflows/{workflowId}/mutations:
+    post:
+      operationId: demonstrateMutation
+      summary: Apply an explicit demo mutation as a new version
+      x-capability: operator
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+      responses:
+        "201": {description: New version created and prior approval invalidated}
+        "403": {description: Mutation demo is not enabled for this workflow}
+  /api/workflows/{workflowId}/dispatch:
+    post:
+      operationId: dispatchApprovedEnvelope
+      summary: Atomically consume exact approval and enqueue Foxit eSign dispatch
+      x-capability: dispatcher
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202": {description: Dispatch queued or existing result returned}
+        "409": {description: Exact approval is absent, stale, expired, or consumed}
+        "429": {description: Live dispatch budget unavailable}
+  /api/workflows/{workflowId}/timeline:
+    get:
+      operationId: getTimeline
+      summary: Return authorized sanitized audit timeline
+      x-capability: operator|approver|dispatcher|auditor
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+      responses:
+        "200": {description: Hash-linked event summaries}
+        "404": {description: Workflow unavailable to this principal}
+  /api/artifacts/{sha256}:
+    get:
+      operationId: downloadArtifact
+      summary: Reverify and stream an owned artifact
+      x-capability: operator|approver|dispatcher|auditor
+      parameters:
+        - name: sha256
+          in: path
+          required: true
+          schema: {type: string, pattern: "^[a-f0-9]{64}$"}
+      responses:
+        "200": {description: Integrity-checked private PDF}
+        "404": {description: Artifact unavailable to this principal}
+        "409": {description: Artifact quarantined after integrity mismatch}
+  /api/webhooks/foxit-esign:
+    post:
+      operationId: receiveFoxitEvent
+      summary: Verify a raw-body Foxit eSign lifecycle event before parsing
+      parameters:
+        - name: signature
+          in: query
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 256}
+      responses:
+        "202": {description: Valid event durably accepted or duplicate acknowledged}
+        "400": {description: Malformed or uncorrelated event}
+        "403": {description: Invalid signature}
+        "413": {description: Raw body exceeds bounded size}
+      x-raw-body-limit-bytes: 1048576
+      x-signature:
+        algorithm: HMAC-SHA-256
+        encoding: base64
+        source: unparsed-request-body
+        rotation-overlap-hours: 24
+components:
+  parameters:
+    WorkflowId:
+      name: workflowId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 16, maxLength: 128}

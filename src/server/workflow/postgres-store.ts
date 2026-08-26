@@ -7,8 +7,14 @@ import {
   isApprovalFresh,
   type ApprovalEnvelopeV1,
 } from "../../core/approval/envelope";
-import { AUDIT_GENESIS, auditEventHash, type AuditEventInput } from "../../core/workflow/audit";
+import {
+  AUDIT_GENESIS,
+  auditEventHash,
+  redactAuditData,
+  type AuditEventInput,
+} from "../../core/workflow/audit";
 import { assertWorkflowTransition, type WorkflowState } from "../../core/workflow/state-machine";
+import { ESignDispatchStore } from "./esign-dispatch-store";
 
 type WorkflowRow = {
   workflow_id: string;
@@ -50,6 +56,10 @@ type LeasedDispatchRow = {
 
 export class PostgresWorkflowStore {
   constructor(private readonly sql: Sql) {}
+
+  async enqueueExactDispatch(input: { workflowId: string; tenantId: string; expectedReviewDigest: string; artifactBytes: Uint8Array; now: Date }) {
+    return new ESignDispatchStore(this.sql).enqueue(input);
+  }
 
   async createReview(envelope: ApprovalEnvelopeV1): Promise<void> {
     await this.sql.begin(async (tx) => {
@@ -398,8 +408,10 @@ export class PostgresWorkflowStore {
       tenantId,
       type,
       actorId,
+      actorRole: auditRoleFor(type, actorId),
       occurredAt: new Date().toISOString(),
-      data,
+      correlationIds: correlationIdsFrom(data),
+      data: redactAuditData(data) as Record<string, unknown>,
     };
     const eventHash = auditEventHash(previousHash, event);
     await tx`
@@ -408,8 +420,23 @@ export class PostgresWorkflowStore {
         event_data, previous_hash, event_hash
       ) values (
         ${event.eventId}, ${workflowId}, ${tenantId}, ${type}, ${actorId},
-        ${event.occurredAt}, ${tx.json(data as JSONValue)}, ${previousHash}, ${eventHash}
+        ${event.occurredAt}, ${tx.json(event.data as JSONValue)}, ${previousHash}, ${eventHash}
       )
     `;
   }
+}
+
+function auditRoleFor(type: string, actorId: string): string {
+  if (actorId === "system") return "system";
+  if (type.startsWith("approval.")) return "approver";
+  if (type.startsWith("dispatch.")) return "dispatcher";
+  return "operator";
+}
+
+function correlationIdsFrom(data: Record<string, unknown>): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const key of ["approvalId", "idempotencyKey", "outboxId", "providerEnvelopeId"]) {
+    if (typeof data[key] === "string") result[key] = data[key];
+  }
+  return result;
 }

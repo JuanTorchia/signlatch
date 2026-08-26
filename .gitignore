@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/test-results
+/playwright-report
+
+# agent-local tooling copied from the governing workspace
+/.agents
 
 # next.js
 /.next/
@@ -20,6 +25,7 @@
 # production
 /build
 /.data
+/artifacts
 
 # misc
 .DS_Store
@@ -41,3 +47,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python provider runtime
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/

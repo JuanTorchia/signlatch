@@ -1,4 +1,8 @@
+import { cookies } from "next/headers";
+
+import { createCsrfToken, parseSession } from "@/server/auth/session";
 import { PreparationDemo } from "./preparation-demo";
+import { FixtureApprovalDemo } from "./fixture-approval-demo";
 
 const workflow = [
   { step: "01", title: "Prepare", description: "The agent turns a plain request into a reviewable document with Foxit MCP." },
@@ -14,7 +18,12 @@ const safeguards = [
   "Verifiable eSign audit trail",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("signlatch_session")?.value;
+  const secret = process.env.AUTH_SESSION_SECRET;
+  const session = sessionToken && secret ? parseSession(sessionToken, secret) : null;
+  const csrfToken = session && sessionToken && secret ? createCsrfToken(sessionToken, secret) : "";
   return (
     <main>
       <section className="hero shell">
@@ -23,7 +32,11 @@ export default function Home() {
             <span className="brand-mark" aria-hidden="true">SL</span>
             <span>SignLatch</span>
           </a>
-          <div className="nav-links"><a className="nav-link" href="#demo">Live demo</a><a className="nav-link" href="#architecture">Architecture</a></div>
+          <div className="nav-links">
+            <a className="nav-link" href="#demo">{session ? "Private workspace" : "Safe showcase"}</a>
+            <a className="nav-link" href="#architecture">Architecture</a>
+            {session ? <form action="/api/auth/signout" method="post"><button className="nav-link" type="submit">Sign out</button></form> : <a className="nav-link" href="/api/auth/login">Sign in</a>}
+          </div>
         </nav>
 
         <div id="top" className="hero-grid">
@@ -73,7 +86,8 @@ export default function Home() {
         </div>
       </section>
 
-      <PreparationDemo />
+      <PreparationDemo authenticated={Boolean(session)} csrfToken={csrfToken} />
+      {!session && <FixtureApprovalDemo />}
 
       <section id="workflow" className="workflow shell">
         <div className="section-heading">
