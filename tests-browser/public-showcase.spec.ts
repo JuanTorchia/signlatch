@@ -11,7 +11,7 @@ test("anonymous showcase is sanitized and has no effect controls", async ({ page
   });
   page.on("pageerror", (error) => browserErrors.push(error.message));
   await page.goto("/");
-  await expect(page.getByText("Sanitized fixture · zero SignLatch/provider effects")).toBeVisible();
+  await expect(page.getByText("Sanitized real fixture")).toBeVisible();
   await expect(page.getByText("Public showcase is read-only")).toBeVisible();
   await expect(page.getByRole("button", { name: /Prepare PDF/i })).toHaveCount(0);
   await expect(page.getByText("Private workspace access is not enabled in this deployment.")).toBeVisible();

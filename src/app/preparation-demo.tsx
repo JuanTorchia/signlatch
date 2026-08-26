@@ -61,17 +61,20 @@ export function PreparationDemo({ authenticated = false, authenticationAvailable
           <p className="eyebrow">Foxit MCP authority boundary</p>
           <span className="live-proof">Public fixture · live operation separately gated</span>
         </div>
-        <h2 id="demo-title">Prepare the exact artifact. Keep signing latched.</h2>
+        <h2 id="demo-title">The fixture behind the approval.</h2>
       </div>
 
-      <div className="demo-grid">
+      <div className={`demo-grid ${!authenticated ? "demo-grid-public" : ""}`}>
         {!authenticated ? (
           <div className="prompt-panel" aria-label="Read-only public fixture">
-            <span className="live-proof">Sanitized fixture · zero SignLatch/provider effects</span>
+            <span className="live-proof">Sanitized real fixture</span>
             <h3>{PUBLIC_SHOWCASE.request}</h3>
-            <p>Artifact SHA-256: <code>{PUBLIC_SHOWCASE.artifactSha256}</code></p>
-            <p>Recipient: {PUBLIC_SHOWCASE.recipient}</p>
-            <p>{PUBLIC_SHOWCASE.findings.join(" · ")}</p>
+            <dl className="fixture-facts">
+              <div><dt>Artifact SHA-256</dt><dd><code>{PUBLIC_SHOWCASE.artifactSha256}</code></dd></div>
+              <div><dt>Recipient</dt><dd>{PUBLIC_SHOWCASE.recipient}</dd></div>
+              <div><dt>Provenance</dt><dd>{PUBLIC_SHOWCASE.provenance.join(" → ")}</dd></div>
+              <div><dt>Authority</dt><dd>{PUBLIC_SHOWCASE.findings.join(" · ")}</dd></div>
+            </dl>
             {authenticationAvailable ? (
               <a className="button button-secondary" href="/api/auth/login">Sign in for the private workspace</a>
             ) : (
@@ -119,10 +122,10 @@ export function PreparationDemo({ authenticated = false, authenticationAvailable
               <p>The PDF, its exact hash and Foxit provenance will appear here.</p>
             </div>
           ) : (
-            <div className="proof-empty">
-              <span>00</span>
-              <h3>Public showcase is read-only</h3>
-              <p>No control on this page can consume Foxit credits or access private artifacts.</p>
+            <div className="public-boundary-note">
+              <span aria-hidden="true">⌁</span>
+              <div><h3>Public showcase is read-only</h3><p>No control here can consume Foxit credits, access private artifacts or contact a recipient.</p></div>
+              <strong>0 provider effects</strong>
             </div>
           )}
         </div>

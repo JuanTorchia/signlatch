@@ -20,6 +20,7 @@ export function FixtureApprovalDemo() {
     : status === "invalidated"
       ? `Approval invalidated by ${category} mutation. Restoring values requires reapproval.`
       : "Exact fixture is ready for human review.";
+  const changedField = category ? `${category}.${category === "recipient" ? "email" : category === "artifact" ? "sha256" : "value"}` : "recipient.email";
 
   function reset() {
     setCategory("");
@@ -37,6 +38,14 @@ export function FixtureApprovalDemo() {
         <div><span className="label">Provider state</span><strong>Locked</strong><small>Zero SignLatch/provider effects</small></div>
       </div>
       <p className="fixture-message" role="status" aria-live="polite" aria-atomic="true">{message}</p>
+      <div className="review-diff" data-state={status} aria-label="Exact mutation evidence">
+        <div className="diff-heading"><span>{status === "invalidated" ? "Exact change" : "Bound snapshot"}</span><code>{status === "invalidated" ? changedField : "approval-v2 / exact fixture"}</code></div>
+        {status === "invalidated" ? <>
+          <p><del>{category === "recipient" ? "alex@example.invalid" : "approved fixture value"}</del></p>
+          <p><ins>{category === "recipient" ? "finance@example.invalid" : "mutated fixture value"}</ins></p>
+        </> : <p className="diff-placeholder">{status === "approved" ? "The exact snapshot is approved. Choose one material mutation to challenge it." : "Review and approve the exact snapshot before introducing a mutation."}</p>}
+        <div className="diff-result"><strong>{status === "invalidated" ? "APPROVAL INVALIDATED" : status === "approved" ? "APPROVAL ACTIVE" : "AWAITING APPROVAL"}</strong><span>Provider: LOCKED</span></div>
+      </div>
       <fieldset className="mutation-matrix">
         <legend>Material mutation matrix</legend>
         <p>Each category must invalidate the current approval state.</p>

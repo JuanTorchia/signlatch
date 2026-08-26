@@ -3,19 +3,14 @@ import { cookies } from "next/headers";
 import { createCsrfToken, parseSession } from "@/server/auth/session";
 import { PreparationDemo } from "./preparation-demo";
 import { FixtureApprovalDemo } from "./fixture-approval-demo";
+import { PUBLIC_SHOWCASE } from "@/core/evidence/showcase";
 
-const workflow = [
-  { step: "01", title: "Prepare", description: "The agent turns a plain request into a reviewable document with Foxit MCP." },
-  { step: "02", title: "Inspect", description: "Deterministic checks bind the exact PDF hash, recipients, and Foxit provenance." },
-  { step: "03", title: "Approve", description: "A person reviews the exact artifact; the public fixture records only a local simulation." },
-  { step: "04", title: "Sign", description: "The implemented Foxit eSign boundary awaits a separately authorized live proof with a consenting signer." },
-];
-
-const safeguards = [
-  "No autonomous signature dispatch",
-  "Exact-document approval",
-  "Recipient set binding",
-  "Designed for verified eSign evidence",
+const authorityEvents = [
+  { time: "09:41:02", event: "Foxit PDF prepared", state: "Reversible" },
+  { time: "09:41:05", event: "Review digest created", state: "Bound" },
+  { time: "09:42:11", event: "Human approval recorded", state: "Local fixture" },
+  { time: "09:42:18", event: "Recipient mutated", state: "Invalidated" },
+  { time: "09:42:18", event: "Provider dispatch", state: "Denied" },
 ];
 
 export default async function Home() {
@@ -42,47 +37,35 @@ export default async function Home() {
 
         <div id="top" className="hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow">Human authority for agentic documents</p>
+            <p className="eyebrow">Document authority workbench</p>
             <h1>Your agent can prepare it. Only you can release it.</h1>
             <p className="lede">
-              SignLatch puts a visible, auditable human checkpoint between AI document work
-              and electronic signature.
+              Inspect the exact document state an agent prepared. If any material fact
+              changes, approval is invalidated before Foxit eSign can act.
             </p>
             <div className="hero-actions">
-              <a className="button button-primary" href="#workflow">See the boundary</a>
+              <a className="button button-primary" href="#fixture-approval-title">Inspect the exact approval</a>
               <a className="button button-secondary" href="https://github.com/JuanTorchia/signlatch">
                 Follow the build
               </a>
             </div>
-            <ul className="safeguards" aria-label="Core safeguards">
-              {safeguards.map((safeguard) => <li key={safeguard}>{safeguard}</li>)}
-            </ul>
           </div>
 
-          <div className="decision-card" aria-label="Example signing decision">
+          <div className="review-receipt" aria-label="Sanitized exact review snapshot">
             <div className="card-bar">
-              <span>Signing checkpoint</span>
-              <span className="status status-blocked">Latched</span>
+              <span>Supplier agreement · review 07</span>
+              <span className="status status-blocked">Provider locked</span>
             </div>
-            <div className="document-preview">
-              <div className="document-line line-long" />
-              <div className="document-line" />
-              <div className="document-line line-medium" />
-              <div className="risk-row">
-                <span className="risk-icon" aria-hidden="true">!</span>
-                <div>
-                  <strong>Exact artifact hash captured</strong>
-                  <p>Any byte or recipient change invalidates approval.</p>
-                </div>
-              </div>
-              <div className="document-line line-long" />
-              <div className="document-line line-short" />
-            </div>
-            <div className="approval-panel">
-              <div><span className="label">Recipient</span><strong>alex@acme.example</strong></div>
-              <button type="button" disabled>Send for signature</button>
-            </div>
-            <p className="card-note">Human approval is necessary, but provider release remains separately gated.</p>
+            <dl className="receipt-facts">
+              <div><dt>Artifact</dt><dd><code>{PUBLIC_SHOWCASE.artifactSha256.slice(0, 16)}…{PUBLIC_SHOWCASE.artifactSha256.slice(-8)}</code></dd></div>
+              <div><dt>Recipient</dt><dd>{PUBLIC_SHOWCASE.recipient}</dd></div>
+              <div><dt>Fields</dt><dd>2 signature fields</dd></div>
+              <div><dt>Findings</dt><dd>1 authority finding</dd></div>
+              <div><dt>Foxit source</dt><dd><code>pdf_from_text</code></dd></div>
+              <div><dt>Provider</dt><dd><strong>LOCKED</strong></dd></div>
+            </dl>
+            <div className="receipt-rule"><span>Exact review digest</span><code>approval-v2 / bound</code></div>
+            <a className="receipt-action" href="#fixture-approval-title">Open review ceremony <span aria-hidden="true">↓</span></a>
           </div>
         </div>
       </section>
@@ -92,33 +75,29 @@ export default async function Home() {
 
       <section id="workflow" className="workflow shell">
         <div className="section-heading">
-          <p className="eyebrow">Reversible until it matters</p>
-          <h2>A clear authority boundary, not another black-box agent.</h2>
+          <p className="eyebrow">Authority event log</p>
+          <h2>Every transition leaves a reason.</h2>
         </div>
-        <div className="workflow-grid">
-          {workflow.map((item) => (
-            <article key={item.step} className="workflow-card">
-              <span>{item.step}</span><h3>{item.title}</h3><p>{item.description}</p>
-            </article>
-          ))}
-        </div>
+        <ol className="authority-log">
+          {authorityEvents.map((item) => <li key={`${item.time}-${item.event}`}><time>{item.time}</time><span>{item.event}</span><strong>{item.state}</strong></li>)}
+        </ol>
       </section>
 
       <section id="architecture" className="architecture shell">
         <div>
-          <p className="eyebrow">Built for the Foxit challenge</p>
-          <h2>MCP for preparation. Direct eSign for commitment.</h2>
+          <p className="eyebrow">Enforcement boundary</p>
+          <h2>Preparation and commitment never share authority.</h2>
         </div>
-        <div className="architecture-path" aria-label="SignLatch architecture flow">
-          <span>Prompt</span><i aria-hidden="true">→</i><span>Foxit MCP</span><i aria-hidden="true">→</i>
-          <span>Policy engine</span><i aria-hidden="true">→</i><strong>Human latch</strong>
-          <i aria-hidden="true">→</i><span>Foxit eSign · live proof pending</span>
+        <div className="boundary-table" aria-label="SignLatch authority boundary">
+          <div><span>Reversible side</span><strong>Prompt → Foxit MCP → Policy checks</strong><small>May prepare and inspect. Cannot authorize.</small></div>
+          <div className="boundary-latch"><span>Human latch</span><strong>Exact digest + recipient + intent</strong><small>Any material mutation invalidates approval.</small></div>
+          <div><span>Commitment side</span><strong>Foxit eSign · live proof pending</strong><small>Separately gated, budgeted and operator-authorized.</small></div>
         </div>
       </section>
 
       <footer className="footer shell">
         <span>SignLatch · Building in public for API World 2026</span>
-        <span>Electronic signatures, accountable humans.</span>
+        <span>Fixture evidence, not marketing claims.</span>
       </footer>
     </main>
   );
