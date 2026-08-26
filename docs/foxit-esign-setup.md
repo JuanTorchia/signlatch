@@ -3,20 +3,27 @@
 SignLatch keeps eSign disabled by default. Fixture tests do not need credentials and
 must run before any account configuration.
 
-The account administrator must obtain the sandbox base URL, OAuth client credentials,
-token path, envelope path, required scopes, webhook signing method, and signer-consent
-requirements from the Foxit eSign API portal attached to the account. These values are
-product- and account-specific; do not infer them from the PDF Services API.
+The account administrator must activate eSign for the application, confirm its storage
+region, obtain the Fusion Client ID and Client Secret, and confirm signer-consent
+requirements in the Foxit Developer Portal. The current v2.3.0 reference uses those
+credentials directly as the `client_id` and `client_secret` request headers; there is
+no OAuth token exchange in this Fusion contract.
 
 Store `FOXIT_ESIGN_CLIENT_ID`, `FOXIT_ESIGN_CLIENT_SECRET`, and the webhook secret only
 in the server secret manager. Configure a credential-free HTTPS base URL. Never expose
 tokens to React, logs, evidence, or repository files.
 
-The server also requires the account-confirmed token, envelope, details, activity,
-executed-document, and correlation paths. Configure them through the corresponding
-`FOXIT_ESIGN_*_PATH` variables shown in `.env.example`; paths are data, not permission
-to call them. Verify the exact webhook signature header and algorithm against the
-account's current Foxit documentation before exposing the callback.
+The server requires the create-envelope, details, activity, and executed-document paths.
+The v2.3.0 reference values are prefilled in `.env.example`. A correlation lookup path
+is optional because the public reference does not document lookup by custom field; if
+an ambiguous create response cannot be reconciled, SignLatch stops instead of creating
+a second envelope. Paths are configuration, not permission to call them.
+
+Foxit signs the exact raw webhook body with HMAC-SHA-256, Base64-encodes the digest,
+and appends it as the callback URL's `signature` query parameter. SignLatch verifies
+that value in constant time before parsing. Configure the webhook URL as
+`https://<host>/api/webhooks/foxit-esign` and set a strong channel secret only in the
+server secret manager.
 
 Before a live proof, an operator must record all of the following as one bounded grant:
 
@@ -30,7 +37,7 @@ Enqueue authorization and worker execution are separate. An ambiguous response e
 reconciliation and must never be retried as a new envelope. Live correlation evidence
 stays private until separately reviewed and authorized for publication.
 
-After the authenticated completed event, executed-document retrieval and evidence
+After the authenticated `folder_executed` event, executed-document retrieval and evidence
 capture have their own `SIGNLATCH_COMPLETION_WORKER_ENABLED` and
 `SIGNLATCH_COMPLETION_EVIDENCE_ENABLED` gates. Evidence is generated from the correlated
 database rows with provider identifiers hashed; operators do not supply claimed digests.

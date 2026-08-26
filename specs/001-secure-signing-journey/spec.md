@@ -283,7 +283,7 @@ and maps every published claim to evidence in under ten minutes.
   and region, folder/envelope ID, every document ID, every party ID, provider event
   identifier when present plus raw-body digest, activity-history digest, download
   operation identifier when present, and executed artifact digest.
-- **PR-003**: OAuth invalid credentials fail permanently; rate limits and server errors
+- **PR-003**: Invalid Foxit client credentials fail permanently; rate limits and server errors
   retry only when known pre-send; provider validation fails permanently; network
   timeout or unknown response enters reconciliation before any new create request.
 - **PR-004**: Webhook HMAC verification MUST occur over the unparsed bytes before JSON

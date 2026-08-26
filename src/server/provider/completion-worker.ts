@@ -36,7 +36,7 @@ export class CompletionWorker {
       where provider_envelope_id = ${envelopeId}
     `;
     const dispatch = rows[0];
-    if (!dispatch || dispatch.lifecycle_state !== "completed") {
+    if (!dispatch || dispatch.lifecycle_state !== "executed") {
       throw new Error("Envelope is not verified complete");
     }
     const bytes = await this.client.downloadExecutedDocument(envelopeId);

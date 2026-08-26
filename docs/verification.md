@@ -74,3 +74,21 @@ the database. No provider call was made during this audit.
 
 This proves configuration is not ready for T074/T087 while all effect gates remain
 closed. It does not authorize adding credentials, exposing the webhook, or dispatching.
+
+## 2026-08-26 Foxit Fusion contract correction
+
+- `pnpm check`: PASS — 76 unit tests, lint, type generation, TypeScript, and
+  production build.
+- Foxit contract suite: PASS — six tests covering Fusion client credentials,
+  `createfolder`, exact approved PDF bytes, party-field binding, canonical Base64
+  webhook HMAC, rotation, official event names, and malformed input denial.
+- isolated PostgreSQL 17 suite: PASS — 27 integration tests with migration `0008`
+  applied; the disposable container was removed after execution.
+- `pnpm test:browser`: PASS — six browser boundary tests, including a forged query
+  signature rejected without presenting fixture completion as verified.
+- approval harness: PASS — five mutation and restoration-denial results regenerated.
+
+The provider lifecycle now treats `folder_completed` as nonterminal evidence and
+requires verified `folder_executed` before executed-document retrieval. These are
+local contract and fixture results only; no live folder was created and no signature
+request was sent.

@@ -73,14 +73,15 @@ general contract generation was rejected as too broad for the competition slice.
 
 ## Decision 6: Direct Foxit eSign REST adapter and executed-event completion
 
-**Decision**: Obtain OAuth 2.0 client-credentials tokens server-side, create a Foxit
-eSign envelope from the approved PDF, and persist folder/envelope identifiers. Treat
+**Decision**: Send the Fusion Client ID and Client Secret only as server-side request
+headers, create a Foxit eSign envelope from the approved PDF, and persist folder/envelope identifiers. Treat
 `folder_executed` as the terminal evidence trigger, then retrieve and independently
 hash the executed document. Verify webhook HMAC-SHA-256 over the raw request body
 using constant-time comparison before parsing.
 
-**Rationale**: Foxit's current official documentation states that eSign uses OAuth
-2.0, envelope creation is `POST /esign/api/v1/folders/createfolder`, webhooks include
+**Rationale**: Foxit's current v2.3.0 API reference uses `client_id` and
+`client_secret` headers with no token exchange. Envelope creation is
+`POST /esign/api/v1/folders/createfolder`; webhooks include
 an HMAC-SHA-256 base64 signature in the `signature` query parameter, and
 `folder_executed` occurs after digital-signature finalization. The official reference
 also exposes envelope detail, activity history, and download operations.
@@ -89,7 +90,7 @@ also exposes envelope detail, activity history, and download operations.
 `folder_completed` occurs before the executed lifecycle point; embedded signing is
 optional and not required for the first consenting test signer.
 
-**Primary sources verified 2026-08-25**:
+**Primary sources reverified 2026-08-26**:
 
 - [Foxit API documentation](https://docs.developer-api.foxit.com/)
 - [Foxit eSign API reference](https://app.developer-api.foxit.com/reference)

@@ -61,10 +61,14 @@ stateDiagram-v2
   dispatching --> reconcile: provider result is ambiguous
   reconcile --> sent: existing provider envelope found
   reconcile --> failed: provider confirms no envelope
-  sent --> completed: verified terminal webhook
+  sent --> signed: verified folder_signed webhook
+  signed --> completed: verified folder_completed webhook
+  completed --> executed: verified folder_executed webhook
 ```
 
-The application must fail closed for transitions not shown here. The dispatcher
+Only `executed` is terminal proof that Foxit finalized the digital signatures and
+made the executed artifact eligible for retrieval. The application must fail closed
+for transitions not shown here. The dispatcher
 uses a durable outbox and a stable provider idempotency key derived from the
 approval digest. The in-memory harness demonstrates semantics; PostgreSQL integration
 tests prove durable invalidation, consumption, and concurrent enqueue behavior.

@@ -10,3 +10,5 @@ for example `0002_secure_foundation.sql`. Apply them exactly once in ascending o
 - Integration tests must use an isolated disposable database and may never target
   development or production data.
 - Authority-state migrations require backup and restore-probe evidence before deployment.
+- `0008_foxit_executed_lifecycle.sql` separates Foxit's nonterminal
+  `folder_completed` event from terminal `folder_executed` evidence.

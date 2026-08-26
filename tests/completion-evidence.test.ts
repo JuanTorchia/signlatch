@@ -12,7 +12,7 @@ function sqlFixture(completed = true): Sql {
     if (query.includes("from esign_dispatches d")) {
       return completed ? [{
         provider_envelope_id: "private-envelope-id",
-        lifecycle_state: "completed",
+        lifecycle_state: "executed",
         artifact_sha256: "a".repeat(64),
         actual_size: 123,
         verified_at: new Date("2026-08-26T13:04:00Z"),
@@ -21,7 +21,7 @@ function sqlFixture(completed = true): Sql {
     if (query.includes("from provider_events e")) {
       return [
         { event_id: "private-event-1", event_type: "sent", occurred_at: new Date("2026-08-26T13:01:00Z") },
-        { event_id: "private-event-2", event_type: "completed", occurred_at: new Date("2026-08-26T13:03:00Z") },
+        { event_id: "private-event-2", event_type: "executed", occurred_at: new Date("2026-08-26T13:03:00Z") },
       ];
     }
     return [];

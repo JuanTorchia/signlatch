@@ -24,7 +24,7 @@ export async function buildCompletionEvidence(sql: Sql, workflowId: string, capt
     join executed_documents x on x.dispatch_id = d.dispatch_id
     where d.workflow_id = ${workflowId}
   `;
-  if (completions.length !== 1 || completions[0].lifecycle_state !== "completed") {
+  if (completions.length !== 1 || completions[0].lifecycle_state !== "executed") {
     throw new Error("Workflow has no unique verified completion");
   }
   const completion = completions[0];
@@ -35,7 +35,7 @@ export async function buildCompletionEvidence(sql: Sql, workflowId: string, capt
     where d.workflow_id = ${workflowId}
     order by e.occurred_at, e.event_id
   `;
-  if (!events.some((event) => event.event_type === "completed")) {
+  if (!events.some((event) => event.event_type === "executed")) {
     throw new Error("Verified completion event is missing");
   }
   const timeline = events.map((event) => ({

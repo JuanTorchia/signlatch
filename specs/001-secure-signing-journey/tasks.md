@@ -143,7 +143,7 @@
 
 ### Tests for User Story 4
 
-- [x] T062 [P] [US4] Add OAuth token, envelope request, error classification, and redaction contract fixtures in tests/foxit-esign-client.test.ts
+- [x] T062 [P] [US4] Add Fusion header authentication, createfolder request, error classification, and redaction contract fixtures in tests/foxit-esign-client.test.ts
 - [x] T063 [P] [US4] Add failing approval-consumption, idempotency, race, and denial integration tests in tests-integration/esign-dispatch.test.ts
 - [x] T064 [P] [US4] Add failing ambiguous timeout and provider reconciliation tests in tests-integration/esign-reconciliation.test.ts
 - [x] T065 [P] [US4] Add dispatcher-role and exact pre-send rehash browser tests in tests-browser/esign-dispatch.spec.ts
@@ -151,7 +151,7 @@
 ### Implementation for User Story 4
 
 - [x] T066 [P] [US4] Define a fail-closed eSign adapter and classified results in src/server/foxit/esign-adapter.ts
-- [x] T067 [US4] Implement server-only OAuth token and create-envelope client in src/server/foxit/esign-client.ts
+- [x] T067 [US4] Implement server-only Fusion credential headers and create-envelope client in src/server/foxit/esign-client.ts
 - [x] T068 [US4] Add dispatch attempts, provider envelopes, stable keys, and correlation constraints in migrations/0005_esign_dispatch.sql
 - [x] T069 [US4] Extend atomic outbox enqueue and approval consumption in src/server/workflow/postgres-store.ts
 - [x] T070 [US4] Connect isolated dispatch and reconciliation adapters in src/server/workflow/outbox-worker.ts

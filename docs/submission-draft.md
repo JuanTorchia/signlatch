@@ -11,7 +11,7 @@ Implemented and fixture-demonstrated: the exact approval latch, five-category at
 matrix, role separation, tenant isolation, provider budgets, fail-closed reconciliation,
 webhook authentication, lifecycle monotonicity, and evidence privacy checks.
 
-Implemented but not yet live-demonstrated: Foxit eSign OAuth/client boundary, controlled
+Implemented but not yet live-demonstrated: Foxit eSign Fusion credential boundary, controlled
 dispatch, webhook persistence, and final-document verification. Live delivery and human
 completion must only be claimed after one separately authorized sandbox journey.
 

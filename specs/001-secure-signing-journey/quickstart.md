@@ -99,7 +99,7 @@ while `SIGNLATCH_ESIGN_ENQUEUE_ENABLED=true`. Worker execution additionally requ
 after the one bounded attempt.
 
 Expected: one Foxit eSign envelope is sent to the consenting signer. After signing and
-receiving the provider's authenticated completed event, retrieve and independently hash
+receiving the provider's authenticated `folder_executed` event, retrieve and independently hash
 the executed document, then derive private evidence from correlated database state:
 
 ```bash

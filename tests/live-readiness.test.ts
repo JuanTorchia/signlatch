@@ -10,7 +10,7 @@ const complete = {
   SIGNLATCH_MAINTAINER_TENANT_ID: "tenant", FOXIT_ESIGN_BASE_URL: "https://sandbox.example.invalid",
   FOXIT_ESIGN_CLIENT_ID: "esign-id", FOXIT_ESIGN_CLIENT_SECRET: "esign-secret",
   FOXIT_ESIGN_CORRELATION_PATH: "/correlation/{idempotencyKey}", FOXIT_ESIGN_ENVELOPE_PATH: "/envelopes",
-  FOXIT_ESIGN_TOKEN_PATH: "/oauth/token", FOXIT_ESIGN_ACTIVITY_PATH: "/envelopes/{envelopeId}/activity",
+  FOXIT_ESIGN_ACTIVITY_PATH: "/envelopes/{envelopeId}/activity",
   FOXIT_ESIGN_DETAILS_PATH: "/envelopes/{envelopeId}",
   FOXIT_ESIGN_EXECUTED_DOCUMENT_PATH: "/envelopes/{envelopeId}/document",
   FOXIT_ESIGN_WEBHOOK_SECRET: "webhook-secret", SIGNLATCH_PRIVATE_EVIDENCE_ROOT: "/private/evidence",

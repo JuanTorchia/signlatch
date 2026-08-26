@@ -9,7 +9,12 @@ export async function POST(request: Request) {
     const rawBody = await readBoundedBody(request, limit);
     const secrets = [process.env.FOXIT_ESIGN_WEBHOOK_SECRET, process.env.FOXIT_ESIGN_WEBHOOK_PREVIOUS_SECRET].filter((v): v is string => Boolean(v));
     if (!secrets.length) return new Response("Unavailable", { status: 503 });
-    const event = verifyFoxitWebhook({ rawBody, signature: request.headers.get("x-foxit-signature") ?? "", secrets, maxBytes: limit });
+    const event = verifyFoxitWebhook({
+      rawBody,
+      signature: new URL(request.url).searchParams.get("signature") ?? "",
+      secrets,
+      maxBytes: limit,
+    });
     const result = await new ProviderEventStore(database()).record(event);
     return Response.json({ accepted: true, duplicate: result.duplicate });
   } catch (error) {
