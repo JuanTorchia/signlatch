@@ -10,6 +10,13 @@ import { sha256 } from "@/core/pdf/preparation";
 import { ArtifactIntegrityError, ArtifactNotFoundError } from "./artifact-errors";
 import { createQpdfRunner, SandboxedPdfValidator } from "./pdf-validator";
 
+export function artifactRootFromEnv(): string {
+  const configured=process.env.SIGNLATCH_ARTIFACT_ROOT?.trim();
+  if(configured){if(!path.isAbsolute(configured))throw new Error("SIGNLATCH_ARTIFACT_ROOT must be absolute");return configured;}
+  if(process.env.NODE_ENV==="production")throw new Error("SIGNLATCH_ARTIFACT_ROOT is required in production");
+  return path.join(process.cwd(),".data","artifacts");
+}
+
 export class FilesystemArtifactStore implements ImmutableArtifactStore {
   constructor(
     private readonly root: string,

@@ -7,6 +7,7 @@ claim that production is provisioned. Deployment remains a separate human gate.
 
 - `web`: public HTTPS UI and authenticated route handlers; no migration credentials.
 - `dispatch-worker`: disabled Compose profile until exact approval and eSign gates pass.
+- `migrate`: one-shot operations profile with a dedicated migration credential.
 - `postgres`: private network only; authoritative ownership, budgets, leases, and audit.
 - `artifacts`: private persistent volume mounted only by authorized application services.
 - `parser`: `qpdf` runs with fixed arguments, bounded input/output/time, and a private
@@ -16,11 +17,19 @@ claim that production is provisioned. Deployment remains a separate human gate.
 ## Migration procedure
 
 1. Take and verify a PostgreSQL backup plus artifact-volume snapshot.
-2. Run migrations from a one-shot identity that is unavailable to web and workers.
-3. Apply files in `migrations/` numeric order inside a transaction.
+2. Set `MIGRATION_DATABASE_URL` only on the one-shot migration identity; never expose it
+   to web or workers.
+3. Run `pnpm db:migrate`. The runner serializes execution with a PostgreSQL advisory
+   lock, applies numeric migration files transactionally, records checksums, and rejects
+   checksum drift. The Compose equivalent is `docker compose --profile operations run --rm migrate`.
 4. Run the tenant, budget, restore, and artifact-integrity probes.
 5. Start the web service with the dispatch-worker profile disabled.
 6. Enable a worker only after its story gate passes and an operator authorizes it.
+
+The dispatch worker has a separate `SIGNLATCH_ESIGN_WORKER_ENABLED` gate and recovers
+expired leases into reconciliation instead of retrying blindly. Executed-document
+retrieval is a separate one-shot operation: enable `SIGNLATCH_COMPLETION_WORKER_ENABLED`
+only after a verified completion event, then run `pnpm completion:run -- <envelope-id>`.
 
 ## HTTPS and health
 

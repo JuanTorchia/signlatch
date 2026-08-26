@@ -23,6 +23,9 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/scripts ./scripts
+COPY --from=build /app/src ./src
+COPY --from=build /app/migrations ./migrations
+COPY --from=build /app/tsconfig.json ./tsconfig.json
 RUN mkdir -p /var/lib/signlatch/artifacts \
     && chown -R node:node /var/lib/signlatch /app
 USER node

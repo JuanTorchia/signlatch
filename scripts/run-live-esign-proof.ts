@@ -1,2 +1,88 @@
-import{createHash,randomUUID}from"node:crypto";import{mkdir,writeFile}from"node:fs/promises";import path from"node:path";import{database}from"../src/server/database";import{FilesystemArtifactStore}from"../src/server/artifacts/filesystem-store";import{ExactFoxitDispatchAdapter}from"../src/server/foxit/exact-dispatch-adapter";import{FoxitESignClient,foxitESignConfigFromEnv}from"../src/server/foxit/esign-client";import{ESignDispatchStore}from"../src/server/workflow/esign-dispatch-store";
-const args=new Map<string,string>();for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i],value=process.argv[i+1];if(key?.startsWith("--")&&value)args.set(key.slice(2),value);}async function main(){const required=["workflow","review-digest","artifact-sha256","recipient","budget","authorization-id"];for(const key of required)if(!args.get(key))throw new Error(`Live proof gate missing --${key}`);if(args.get("budget")!=="1")throw new Error("Live proof budget must equal exactly one");if(process.env.SIGNLATCH_ESIGN_ENQUEUE_ENABLED!=="true"||process.env.SIGNLATCH_ESIGN_WORKER_ENABLED!=="true"||process.env.SIGNLATCH_LIVE_PROOF_AUTHORIZATION_ID!==args.get("authorization-id"))throw new Error("Live proof is disabled without matching immediate human authorization");const sql=database();try{const workflowId=args.get("workflow")!;const checks=await sql<Array<{snapshot_digest:string;artifact_sha256:string}>>`select r.snapshot_digest,d.artifact_sha256 from agreement_workflows w join review_snapshots r on r.workflow_id=w.workflow_id and r.version=w.active_review_version join document_versions d on d.workflow_id=w.workflow_id and d.version=w.active_document_version where w.workflow_id=${workflowId}`;if(checks[0]?.snapshot_digest!==args.get("review-digest")||checks[0]?.artifact_sha256!==args.get("artifact-sha256"))throw new Error("Live proof digests do not match current workflow");const store=new ESignDispatchStore(sql);const lease=await store.leaseNext(`live-proof:${randomUUID()}`,new Date(),120,workflowId);if(!lease)throw new Error("No exact pending dispatch exists for the authorized workflow");const adapter=new ExactFoxitDispatchAdapter(sql,new FoxitESignClient(foxitESignConfigFromEnv()),new FilesystemArtifactStore(path.join(process.cwd(),".data","artifacts")));const result=await adapter.send(lease);if(result.status==="sent")await store.markSent(lease,result.providerEnvelopeId,result.correlationId);else{await store.markReconcile(lease,"correlationId"in result?result.correlationId:undefined);throw new Error(`Provider result requires reconciliation: ${result.status}`);}const evidence={schema:"signlatch.live-esign-private.v1",capturedAt:new Date().toISOString(),workflowId,reviewDigest:args.get("review-digest"),artifactSha256:args.get("artifact-sha256"),providerEnvelopeIdHash:createHash("sha256").update(result.providerEnvelopeId).digest("hex"),authorizationIdHash:createHash("sha256").update(args.get("authorization-id")!).digest("hex")};const root=path.join(process.cwd(),".data","evidence-staging");await mkdir(root,{recursive:true});await writeFile(path.join(root,`${workflowId}.json`),`${JSON.stringify(evidence,null,2)}\n`,{flag:"wx",mode:0o600});console.log(JSON.stringify({status:"sent",privateEvidence:`.data/evidence-staging/${workflowId}.json`}));}finally{await sql.end();}}void main();
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+import { artifactRootFromEnv, FilesystemArtifactStore } from "../src/server/artifacts/filesystem-store";
+import { database } from "../src/server/database";
+import { ExactFoxitDispatchAdapter } from "../src/server/foxit/exact-dispatch-adapter";
+import { FoxitESignClient, foxitESignConfigFromEnv } from "../src/server/foxit/esign-client";
+import { ESignDispatchStore } from "../src/server/workflow/esign-dispatch-store";
+
+const args = new Map<string, string>();
+for (let index = 2; index < process.argv.length; index += 2) {
+  const key = process.argv[index];
+  const value = process.argv[index + 1];
+  if (key?.startsWith("--") && value) args.set(key.slice(2), value);
+}
+
+async function main() {
+  const required = ["workflow", "review-digest", "artifact-sha256", "recipient", "budget", "authorization-id"];
+  for (const key of required) if (!args.get(key)) throw new Error(`Live proof gate missing --${key}`);
+  if (args.get("budget") !== "1") throw new Error("Live proof budget must equal exactly one");
+  if (process.env.SIGNLATCH_ESIGN_ENQUEUE_ENABLED !== "true"
+    || process.env.SIGNLATCH_ESIGN_WORKER_ENABLED !== "true"
+    || process.env.SIGNLATCH_LIVE_PROOF_AUTHORIZATION_ID !== args.get("authorization-id")) {
+    throw new Error("Live proof is disabled without matching immediate human authorization");
+  }
+
+  const sql = database();
+  try {
+    const workflowId = args.get("workflow")!;
+    const checks = await sql<Array<{
+      snapshot_digest: string;
+      artifact_sha256: string;
+      snapshot_payload: { recipients: Array<{ email: string }> };
+    }>>`
+      select r.snapshot_digest, r.snapshot_payload, d.artifact_sha256
+      from agreement_workflows w
+      join review_snapshots r on r.workflow_id=w.workflow_id and r.version=w.active_review_version
+      join document_versions d on d.workflow_id=w.workflow_id and d.version=w.active_document_version
+      where w.workflow_id=${workflowId}
+    `;
+    const current = checks[0];
+    if (current?.snapshot_digest !== args.get("review-digest")
+      || current?.artifact_sha256 !== args.get("artifact-sha256")) {
+      throw new Error("Live proof digests do not match current workflow");
+    }
+    if (current.snapshot_payload.recipients.length !== 1
+      || current.snapshot_payload.recipients[0].email.toLowerCase() !== args.get("recipient")!.toLowerCase()) {
+      throw new Error("Authorized recipient does not match exact review");
+    }
+
+    const store = new ESignDispatchStore(sql);
+    const lease = await store.leaseNext(`live-proof:${randomUUID()}`, new Date(), 120, workflowId);
+    if (!lease) throw new Error("No exact pending dispatch exists for the authorized workflow");
+    const adapter = new ExactFoxitDispatchAdapter(
+      sql,
+      new FoxitESignClient(foxitESignConfigFromEnv()),
+      new FilesystemArtifactStore(artifactRootFromEnv()),
+    );
+    const result = await adapter.send(lease);
+    if (result.status === "sent") await store.markSent(lease, result.providerEnvelopeId, result.correlationId);
+    else {
+      await store.markReconcile(lease, "correlationId" in result ? result.correlationId : undefined);
+      throw new Error(`Provider result requires reconciliation: ${result.status}`);
+    }
+
+    const evidence = {
+      schema: "signlatch.live-esign-private.v1",
+      capturedAt: new Date().toISOString(),
+      workflowId,
+      reviewDigest: args.get("review-digest"),
+      artifactSha256: args.get("artifact-sha256"),
+      providerEnvelopeIdHash: createHash("sha256").update(result.providerEnvelopeId).digest("hex"),
+      authorizationIdHash: createHash("sha256").update(args.get("authorization-id")!).digest("hex"),
+    };
+    const configuredEvidenceRoot=process.env.SIGNLATCH_PRIVATE_EVIDENCE_ROOT?.trim();
+    if(configuredEvidenceRoot&&!path.isAbsolute(configuredEvidenceRoot))throw new Error("SIGNLATCH_PRIVATE_EVIDENCE_ROOT must be absolute");
+    if(process.env.NODE_ENV==="production"&&!configuredEvidenceRoot)throw new Error("SIGNLATCH_PRIVATE_EVIDENCE_ROOT is required in production");
+    const root = configuredEvidenceRoot??path.join(process.cwd(), ".data", "evidence-staging");
+    await mkdir(root, { recursive: true });
+    await writeFile(path.join(root, `${workflowId}.json`), `${JSON.stringify(evidence, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+    console.log(JSON.stringify({ status: "sent", privateEvidence: "staged-private" }));
+  } finally {
+    await sql.end();
+  }
+}
+
+void main();

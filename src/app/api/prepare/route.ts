@@ -1,5 +1,4 @@
 import { createHash, randomUUID } from "node:crypto";
-import path from "node:path";
 
 import { requireCurrentCapability } from "@/server/auth/authorize";
 import {
@@ -8,7 +7,7 @@ import {
   sessionTokenFromRequest,
 } from "@/server/auth/request-session";
 import { database } from "@/server/database";
-import { FilesystemArtifactStore } from "@/server/artifacts/filesystem-store";
+import { artifactRootFromEnv, FilesystemArtifactStore } from "@/server/artifacts/filesystem-store";
 import { FoxitStdioMcpClient, foxitMcpConfigFromEnv } from "@/server/foxit/mcp-client";
 import { prepareTextPdf } from "@/server/foxit/prepare-text-pdf";
 import { BodyLimitError, readBoundedBody } from "@/server/http/bounded-body";
@@ -68,7 +67,7 @@ export async function POST(request: Request) {
     const result = await prepareTextPdf(
       prompt,
       new FoxitStdioMcpClient(foxitMcpConfigFromEnv()),
-      new FilesystemArtifactStore(path.join(process.cwd(), ".data", "artifacts")),
+      new FilesystemArtifactStore(artifactRootFromEnv()),
     );
     await security.registerArtifact({
       tenantId: session.tenantId,
@@ -88,7 +87,7 @@ export async function POST(request: Request) {
         url: `/api/artifacts/${result.artifact.sha256}`,
       },
       manifest: result.manifest,
-      authority: { signingEnabled: false, reason: "Human approval is not implemented" },
+      authority: { signingEnabled: false, reason: "Preparation never grants approval or dispatch authority" },
     });
   } catch (error) {
     if (operationLease && operations) await operations.reconcile(operationLease).catch(() => undefined);

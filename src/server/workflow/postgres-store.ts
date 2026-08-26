@@ -57,7 +57,7 @@ type LeasedDispatchRow = {
 export class PostgresWorkflowStore {
   constructor(private readonly sql: Sql) {}
 
-  async enqueueExactDispatch(input: { workflowId: string; tenantId: string; expectedReviewDigest: string; artifactBytes: Uint8Array; now: Date }) {
+  async enqueueExactDispatch(input: { workflowId: string; tenantId: string; expectedReviewDigest: string; artifactBytes: Uint8Array; operationId:string;now: Date }) {
     return new ESignDispatchStore(this.sql).enqueue(input);
   }
 

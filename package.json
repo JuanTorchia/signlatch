@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "worker:start": "tsx scripts/run-dispatch-worker.ts",
+    "completion:run": "tsx scripts/run-completion-worker.ts",
+    "db:migrate": "tsx scripts/apply-migrations.ts",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts",

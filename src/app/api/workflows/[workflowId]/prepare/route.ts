@@ -1,11 +1,10 @@
 import { createHash, randomUUID } from "node:crypto";
-import path from "node:path";
 
 import { createReviewSnapshot } from "@/core/agreement/review";
 import { evaluateAgreementPolicy } from "@/core/agreement/policy";
 import { renderAgreementText } from "@/core/agreement/render";
 import { validateAgreementIntent } from "@/core/agreement/intent";
-import { FilesystemArtifactStore } from "@/server/artifacts/filesystem-store";
+import { artifactRootFromEnv, FilesystemArtifactStore } from "@/server/artifacts/filesystem-store";
 import { requireCurrentCapability } from "@/server/auth/authorize";
 import { requireRequestCsrf, sessionFromRequest, sessionTokenFromRequest } from "@/server/auth/request-session";
 import { database } from "@/server/database";
@@ -39,7 +38,7 @@ export async function POST(request: Request, context: RouteContext<"/api/workflo
     const lease = await operations.start(reservation.operationId, `review:${randomUUID()}`, new Date());
     if (!lease) return Response.json({ operationId: reservation.operationId, status: "reserved" }, { status: 202 });
     try {
-      const result = await prepareTextPdf(renderAgreementText(current.intent), new FoxitStdioMcpClient(foxitMcpConfigFromEnv()), new FilesystemArtifactStore(path.join(process.cwd(), ".data", "artifacts")));
+      const result = await prepareTextPdf(renderAgreementText(current.intent), new FoxitStdioMcpClient(foxitMcpConfigFromEnv()), new FilesystemArtifactStore(artifactRootFromEnv()));
       const findings = evaluateAgreementPolicy(current.intent);
       const recipients = current.intent.signers.map((signer, index) => ({ id: signer.id, email: signer.email, order: index + 1 }));
       const fields = recipients.map((recipient) => ({ id: `signature-${recipient.id}`, recipientId: recipient.id, page: 1, rectangle: [100, 700, 300, 760] as [number, number, number, number] }));

@@ -19,11 +19,12 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [x] Durable outbox and stable provider idempotency key
 - [x] Ambiguous-timeout reconciliation path
 - [x] Append-only audit event schema
-- [ ] Production database provisioning and migration automation
+- [ ] Production database provisioning
+- [x] Transactional, locked and checksum-verified migration automation
 - [x] Outbox worker lease and retry budget
 - [x] Fail-closed provider adapter contract
 - [x] Expired-lease recovery with generation fencing
-- [ ] Provider reconciliation adapter
+- [x] Provider correlation reconciliation adapter (fixture-tested; live gate disabled)
 
 ## M3 — Real Foxit preparation
 
@@ -49,7 +50,7 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [x] Raw-body webhook verification and event replay defense
 - [x] Monotonic event processing and provider correlation
 - [x] Executed PDF retrieval, validation, storage and digest implementation
-- [ ] End-to-end browser journey and negative demo
+- [x] End-to-end fixture browser journey and negative demo
 - [x] Reproducible setup and architecture documentation
 - [ ] Recorded demo video
 - [ ] Concrete procurement buyer story with measurable value

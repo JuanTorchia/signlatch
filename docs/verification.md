@@ -17,3 +17,17 @@ credentials, document text, and private paths are excluded.
 
 No live eSign claim is recorded here. The sandbox dispatch, signed completion evidence,
 deployment, media publication, and submission remain explicit human decisions.
+
+## 2026-08-26 pre-sandbox hardening gate
+
+- checksum-tracked migration runner, two consecutive executions against the disposable
+  PostgreSQL database: PASS; the second execution applied no migrations.
+- `pnpm check`: PASS — 65 unit tests, lint, type generation, TypeScript, and production build.
+- isolated PostgreSQL suite: PASS — 26 integration tests, including one-unit dispatch
+  budget accounting and expired-lease recovery into reconciliation.
+- `pnpm test:browser`: PASS — six browser boundary tests.
+- attack harness, privacy scan, manifest verification, and link scan: PASS — five
+  mutation classes, zero privacy findings, one fixture manifest entry, zero broken links.
+
+These are fixture and local infrastructure results. They do not satisfy the live sandbox
+journey or authorize a provider call.

@@ -64,6 +64,30 @@ export class ProviderOperations {
         and leased_by = ${lease.workerId} and lease_generation = ${lease.generation}
     `;
   }
+
+  async releaseReservation(operationId: string, reason = "reservation-released"): Promise<void> {
+    await this.sql.begin(async (tx) => {
+      const rows = await tx<Array<{ tenant_id: string; operation_kind: string; reserved_units: number; created_at: Date }>>`
+        update provider_operations
+        set state = 'failed', result_payload = ${tx.json({ reason })}, updated_at = now()
+        where operation_id = ${operationId} and state = 'reserved'
+        returning tenant_id, operation_kind, reserved_units, created_at
+      `;
+      const operation = rows[0];
+      if (!operation) return;
+      const periodStart = new Date(Date.UTC(
+        operation.created_at.getUTCFullYear(),
+        operation.created_at.getUTCMonth(),
+        operation.created_at.getUTCDate(),
+      ));
+      await tx`
+        update provider_budgets
+        set reserved = reserved - ${operation.reserved_units}, version = version + 1
+        where tenant_id = ${operation.tenant_id} and provider = 'foxit'
+          and operation_kind = ${operation.operation_kind} and period_start = ${periodStart}
+      `;
+    });
+  }
 }
 
 export type ProviderOperationLease = {

@@ -1,7 +1,5 @@
-import path from "node:path";
-
 import { ArtifactIntegrityError } from "@/server/artifacts/artifact-errors";
-import { FilesystemArtifactStore } from "@/server/artifacts/filesystem-store";
+import { artifactRootFromEnv, FilesystemArtifactStore } from "@/server/artifacts/filesystem-store";
 import { requireCurrentCapability } from "@/server/auth/authorize";
 import { sessionFromRequest } from "@/server/auth/request-session";
 import { database } from "@/server/database";
@@ -18,7 +16,7 @@ export async function GET(_request: Request, context: RouteContext<"/api/artifac
     if (!(await security.ownsArtifact(session.tenantId, sha))) {
       return new Response("Not found", { status: 404 });
     }
-    const store = new FilesystemArtifactStore(path.join(process.cwd(), ".data", "artifacts"));
+    const store = new FilesystemArtifactStore(artifactRootFromEnv());
     const bytes = await store.getVerifiedPdf(sha);
     return new Response(new Uint8Array(bytes), {
       headers: {
