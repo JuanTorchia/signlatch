@@ -215,7 +215,7 @@
 - [x] T096 [US6] Create English video script, shot list, real-data frame plan, and caption transcript draft in docs/media/demo-video-draft.md
 - [x] T097 [US6] Create English and Spanish build-in-public post drafts with dated evidence links in docs/media/build-post-en-draft.md and docs/media/build-post-es-draft.md
 - [x] T098 [US6] Create competition submission copy with exact Foxit integration claims in docs/submission-draft.md
-- [ ] T099 [US6] Run the clean-checkout judge journey, evidence verification, privacy scan, and link validation from specs/001-secure-signing-journey/quickstart.md
+- [x] T099 [US6] Run the clean-checkout judge journey, evidence verification, privacy scan, and link validation from specs/001-secure-signing-journey/quickstart.md
 
 **Checkpoint**: Submission material is ready for review but remains unpublished until separately authorized.
 
@@ -229,8 +229,8 @@
 - [x] T101 [P] Add accessibility and responsive review requirements and tests in docs/accessibility.md and tests-browser/accessibility.spec.ts
 - [x] T102 [P] Add retention, cleanup, failure reconciliation, backup, and restore operations in docs/data-lifecycle.md
 - [x] T103 Add observability for budgets, denied dispatch, reconciliation, webhook rejection, cleanup, and quarantine in src/server/observability/security-events.ts
-- [ ] T104 Run pnpm check twice from a clean checkout and record only sanitized results in docs/verification.md
-- [ ] T105 Run TEST_DATABASE_URL=postgresql://... pnpm test:integration twice against an isolated database and record sanitized results in docs/verification.md
+- [x] T104 Run pnpm check twice from a clean checkout and record only sanitized results in docs/verification.md
+- [x] T105 Run TEST_DATABASE_URL=postgresql://... pnpm test:integration twice against an isolated database and record sanitized results in docs/verification.md
 - [ ] T106 Run the fixture journey, attack matrix, and one separately authorized live journey from specs/001-secure-signing-journey/quickstart.md
 - [x] T107 Review public wording for dated credit cost, scoped tamper evidence, legal boundary, and implementation status in README.md and docs/
 - [ ] T108 Obtain final human go/no-go for deployment, public evidence, live dispatch, media, and submission as separate release decisions in docs/release-checklist.md
