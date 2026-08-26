@@ -67,7 +67,7 @@ export function PreparationDemo({ authenticated = false, authenticationAvailable
       <div className="demo-grid">
         {!authenticated ? (
           <div className="prompt-panel" aria-label="Read-only public fixture">
-            <span className="live-proof">Sanitized fixture · zero external effects</span>
+            <span className="live-proof">Sanitized fixture · zero SignLatch/provider effects</span>
             <h3>{PUBLIC_SHOWCASE.request}</h3>
             <p>Artifact SHA-256: <code>{PUBLIC_SHOWCASE.artifactSha256}</code></p>
             <p>Recipient: {PUBLIC_SHOWCASE.recipient}</p>

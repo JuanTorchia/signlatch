@@ -11,6 +11,7 @@ const payload = {
 };
 const raw = Buffer.from(JSON.stringify(payload));
 const signature = createHmac("sha256", secret).update(raw).digest("base64");
+const nowMs = Date.parse("2026-08-26T12:01:00Z");
 
 test("official base64 raw-body HMAC accepts active and rotation secrets", () => {
   assert.deepEqual(
@@ -18,6 +19,7 @@ test("official base64 raw-body HMAC accepts active and rotation secrets", () => 
       rawBody: raw,
       signature,
       secrets: ["new-webhook-secret-at-least-32-bytes", secret],
+      nowMs,
     }),
     {
       eventId: createHash("sha256").update(raw).digest("hex"),
@@ -41,11 +43,65 @@ test("every supported Foxit event maps to the internal lifecycle", () => {
     const body = Buffer.from(JSON.stringify({ ...payload, event_name }));
     const signed = createHmac("sha256", secret).update(body).digest("base64");
     assert.equal(
-      verifyFoxitWebhook({ rawBody: body, signature: signed, secrets: [secret] })
+      verifyFoxitWebhook({ rawBody: body, signature: signed, secrets: [secret], nowMs })
         .type,
       expected,
     );
   }
+});
+
+test("stale and future-dated signed events fail the freshness window", () => {
+  for (const event_date of [
+    nowMs - 7 * 24 * 60 * 60 * 1_000 - 1,
+    nowMs + 5 * 60 * 1_000 + 1,
+  ]) {
+    const body = Buffer.from(JSON.stringify({ ...payload, event_date }));
+    const signed = createHmac("sha256", secret).update(body).digest("base64");
+    assert.throws(
+      () =>
+        verifyFoxitWebhook({
+          rawBody: body,
+          signature: signed,
+          secrets: [secret],
+          nowMs,
+        }),
+      /timestamp.*window/,
+    );
+  }
+});
+
+test("freshness boundaries and an explicit retry window are accepted", () => {
+  for (const event_date of [
+    nowMs - 7 * 24 * 60 * 60 * 1_000,
+    nowMs + 5 * 60 * 1_000,
+  ]) {
+    const body = Buffer.from(JSON.stringify({ ...payload, event_date }));
+    const signed = createHmac("sha256", secret).update(body).digest("base64");
+    assert.equal(
+      verifyFoxitWebhook({
+        rawBody: body,
+        signature: signed,
+        secrets: [secret],
+        nowMs,
+      }).envelopeId,
+      "731",
+    );
+  }
+
+  const oldRetry = Buffer.from(JSON.stringify({
+    ...payload,
+    event_date: nowMs - 14 * 24 * 60 * 60 * 1_000,
+  }));
+  assert.equal(
+    verifyFoxitWebhook({
+      rawBody: oldRetry,
+      signature: createHmac("sha256", secret).update(oldRetry).digest("base64"),
+      secrets: [secret],
+      nowMs,
+      maxEventAgeMs: 30 * 24 * 60 * 60 * 1_000,
+    }).type,
+    "executed",
+  );
 });
 
 test("forged, malformed, unknown, empty, and oversized webhooks fail closed", () => {

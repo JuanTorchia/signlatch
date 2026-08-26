@@ -7,7 +7,7 @@ import { FixtureApprovalDemo } from "./fixture-approval-demo";
 const workflow = [
   { step: "01", title: "Prepare", description: "The agent turns a plain request into a reviewable document with Foxit MCP." },
   { step: "02", title: "Inspect", description: "Deterministic checks bind the exact PDF hash, recipients, and Foxit provenance." },
-  { step: "03", title: "Approve", description: "A person sees the exact artifact and unlocks the irreversible handoff." },
+  { step: "03", title: "Approve", description: "A person reviews the exact artifact; the public fixture records only a local simulation." },
   { step: "04", title: "Sign", description: "The implemented Foxit eSign boundary awaits a separately authorized live proof with a consenting signer." },
 ];
 
@@ -15,7 +15,7 @@ const safeguards = [
   "No autonomous signature dispatch",
   "Exact-document approval",
   "Recipient set binding",
-  "Verifiable eSign audit trail",
+  "Designed for verified eSign evidence",
 ];
 
 export default async function Home() {
@@ -82,7 +82,7 @@ export default async function Home() {
               <div><span className="label">Recipient</span><strong>alex@acme.example</strong></div>
               <button type="button" disabled>Send for signature</button>
             </div>
-            <p className="card-note">Human approval required to unlatch this action.</p>
+            <p className="card-note">Human approval is necessary, but provider release remains separately gated.</p>
           </div>
         </div>
       </section>
@@ -112,7 +112,7 @@ export default async function Home() {
         <div className="architecture-path" aria-label="SignLatch architecture flow">
           <span>Prompt</span><i aria-hidden="true">→</i><span>Foxit MCP</span><i aria-hidden="true">→</i>
           <span>Policy engine</span><i aria-hidden="true">→</i><strong>Human latch</strong>
-          <i aria-hidden="true">→</i><span>Foxit eSign</span>
+          <i aria-hidden="true">→</i><span>Foxit eSign · live proof pending</span>
         </div>
       </section>
 

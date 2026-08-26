@@ -26,11 +26,17 @@ const lifecycleByEventName: Record<string, FoxitLifecycle | undefined> = {
   folder_cancelled: "cancelled",
 };
 
+const DEFAULT_MAX_EVENT_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
+const DEFAULT_MAX_FUTURE_SKEW_MS = 5 * 60 * 1_000;
+
 export function verifyFoxitWebhook(input: {
   rawBody: Uint8Array;
   signature: string;
   secrets: readonly string[];
   maxBytes?: number;
+  nowMs?: number;
+  maxEventAgeMs?: number;
+  maxFutureSkewMs?: number;
 }): FoxitWebhookEvent {
   if (
     !input.rawBody.length ||
@@ -71,6 +77,21 @@ export function verifyFoxitWebhook(input: {
     eventDate <= 0
   ) {
     throw new Error("Webhook event is invalid");
+  }
+  const nowMs = input.nowMs ?? Date.now();
+  const maxEventAgeMs = input.maxEventAgeMs ?? DEFAULT_MAX_EVENT_AGE_MS;
+  const maxFutureSkewMs = input.maxFutureSkewMs ?? DEFAULT_MAX_FUTURE_SKEW_MS;
+  if (
+    !Number.isSafeInteger(nowMs) ||
+    !Number.isSafeInteger(maxEventAgeMs) ||
+    maxEventAgeMs < 0 ||
+    !Number.isSafeInteger(maxFutureSkewMs) ||
+    maxFutureSkewMs < 0
+  ) {
+    throw new Error("Webhook freshness policy is invalid");
+  }
+  if (eventDate < nowMs - maxEventAgeMs || eventDate > nowMs + maxFutureSkewMs) {
+    throw new Error("Webhook event timestamp is outside the accepted window");
   }
   const occurredAt = new Date(eventDate).toISOString();
   return {

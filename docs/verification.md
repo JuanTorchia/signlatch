@@ -112,3 +112,33 @@ request was sent.
 
 This remediation is local and not deployed. It does not authorize a push, deployment,
 OAuth configuration, Foxit call, or signing journey.
+
+## 2026-08-26 webhook freshness hardening
+
+- Signed provider events older than seven days fail closed by default.
+- Signed provider events more than five minutes in the future fail closed.
+- Boundary timestamps remain accepted, and an operator can provide an explicit
+  wider retry window without weakening the production default.
+- `pnpm test:contract`: PASS — eight contract tests, including stale, future-dated,
+  exact-boundary, and explicit retry-window cases.
+- `pnpm typecheck` and `pnpm lint`: PASS.
+
+This closes the local webhook freshness finding. It does not claim a live Foxit
+event and does not authorize enabling provider-effect gates.
+
+## 2026-08-26 public fixture UI and UX hardening
+
+- The ceremony now separates application state from the provider state and keeps
+  `Locked · Zero SignLatch/provider effects` visible during review, simulated approval and
+  invalidation.
+- Fixture controls no longer describe a provider release; the positive path records a
+  browser-only simulated approval.
+- `pnpm test:browser`: PASS — 14 tests covering all five mutation categories, clean
+  recovery, zero application-effect requests, keyboard operation, visible focus,
+  console/page errors, and horizontal overflow at 320, 390 and 1440 CSS pixels.
+- `pnpm check`: PASS — 78 unit tests, lint, type generation, TypeScript and production
+  build.
+
+Full-page desktop and mobile screenshots were visually inspected and recorded in the
+challenge evidence workspace. These results describe the local working tree; they are
+not evidence that the current production deployment contains this UI revision.

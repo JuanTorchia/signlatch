@@ -25,7 +25,7 @@ untrusted until their raw request signature and freshness are verified.
 | Approval replay or double send | Atomic consumption, outbox and idempotency | Implemented and race-tested |
 | Prompt injection from PDF content | Sandboxed parsing and data/instruction separation | Implemented with hostile fixtures |
 | Agent access to eSign credentials | Separate server-only adapter outside agent tools | Implemented; live credentials disabled |
-| Forged or replayed webhook | Raw-body HMAC, rotation and event replay store | Implemented; live provider proof pending |
+| Forged, replayed, stale, or future-dated webhook | Raw-body HMAC, rotation, bounded event time and event replay store | Implemented; live provider proof pending |
 | Audit tampering | Hash-linked event chain | Implemented and mutation-tested |
 | Cross-tenant authorization | Tenant-bound approval and current membership checks | Implemented and integration-tested |
 
