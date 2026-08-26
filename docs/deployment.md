@@ -1,7 +1,7 @@
 # Deployment operations
 
 This document describes the Bulbasaur container deployment and its operator procedure.
-Revision `cbfc34af857b96db940ef704ded9c4edf96a50f3` was deployed fixture-first at
+Revision `17f2309e07b4878c9695adf10e014d57e6cb65e5` was deployed fixture-first at
 <https://signlatch.juanchi.dev/> on 2026-08-26 UTC. The public runtime has all
 provider-effect gates disabled. Deploying a later revision remains a separate human gate.
 
@@ -68,13 +68,17 @@ delete or rewrite audit history to make it match an application narrative.
 - Coolify application: `vid1oudxcb82gplp9t3vtcgo`
 - PostgreSQL resource: `1pciuuldotk533ocrrsxsade`
 - Persistent volume: `vid1oudxcb82gplp9t3vtcgo-data`
-- Successful deployment: `6uox8gxy7x48fzun2eeflvrs`
+- Successful deployment: `uix57yaavntuz1zcpkhrpgme`
+- Database migration `0008_foxit_executed_lifecycle.sql` applied at
+  `2026-08-26T15:15:12Z`; a second execution was idempotent.
 - Restic snapshot: `a2db12f6`; the database dump was restored and validated with
   `pg_restore --list`.
 - HTTP redirects to HTTPS, HTTPS returns 200, HSTS is present, and the container
   healthcheck is healthy.
 
-GitHub OAuth is not configured in this deployment, so the public experience is
+The prior immutable application rollback is revision
+`cbfc34af857b96db940ef704ded9c4edf96a50f3`. GitHub OAuth is not configured in
+this deployment, so the public experience is
 intentionally a read-only fixture showcase. Database runtime and migration credentials
 currently share the generated Coolify role; splitting them is a production-hardening
 task before authenticated multi-user use.
