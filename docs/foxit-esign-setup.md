@@ -12,6 +12,12 @@ Store `FOXIT_ESIGN_CLIENT_ID`, `FOXIT_ESIGN_CLIENT_SECRET`, and the webhook secr
 in the server secret manager. Configure a credential-free HTTPS base URL. Never expose
 tokens to React, logs, evidence, or repository files.
 
+The server also requires the account-confirmed token, envelope, details, activity,
+executed-document, and correlation paths. Configure them through the corresponding
+`FOXIT_ESIGN_*_PATH` variables shown in `.env.example`; paths are data, not permission
+to call them. Verify the exact webhook signature header and algorithm against the
+account's current Foxit documentation before exposing the callback.
+
 Before a live proof, an operator must record all of the following as one bounded grant:
 
 1. sandbox account and confirmed API scopes;
@@ -23,3 +29,8 @@ Before a live proof, an operator must record all of the following as one bounded
 Enqueue authorization and worker execution are separate. An ambiguous response enters
 reconciliation and must never be retried as a new envelope. Live correlation evidence
 stays private until separately reviewed and authorized for publication.
+
+After the authenticated completed event, executed-document retrieval and evidence
+capture have their own `SIGNLATCH_COMPLETION_WORKER_ENABLED` and
+`SIGNLATCH_COMPLETION_EVIDENCE_ENABLED` gates. Evidence is generated from the correlated
+database rows with provider identifiers hashed; operators do not supply claimed digests.

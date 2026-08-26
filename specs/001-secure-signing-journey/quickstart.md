@@ -71,12 +71,35 @@ authorized operator must enable a one-operation budget and explicitly confirm th
 test tenant, recipient, artifact digest, and provider account immediately before run.
 
 ```bash
-pnpm operator:live-proof -- --workflow <uuid> --budget 1
+pnpm operator:live-proof -- \
+  --workflow <uuid> \
+  --review-digest <64-hex-digest> \
+  --artifact-sha256 <64-hex-digest> \
+  --recipient <consenting-sandbox-address> \
+  --budget 1 \
+  --authorization-id <fresh-private-authorization-id>
 ```
 
-Expected: one Foxit eSign envelope is sent to the consenting signer. After signing,
-an authenticated `folder_executed` event is correlated, the executed PDF is retrieved
-and independently hashed, and sanitized evidence is written to a private staging area.
+This command processes only an already-pending dispatch for the named workflow. The
+dispatcher must first enqueue that exact approved review through the authenticated UI
+while `SIGNLATCH_ESIGN_ENQUEUE_ENABLED=true`. Worker execution additionally requires
+`SIGNLATCH_ESIGN_WORKER_ENABLED=true` and an exact
+`SIGNLATCH_LIVE_PROOF_AUTHORIZATION_ID` match. These gates must be removed immediately
+after the one bounded attempt.
+
+Expected: one Foxit eSign envelope is sent to the consenting signer. After signing and
+receiving the provider's authenticated completed event, retrieve and independently hash
+the executed document, then derive private evidence from correlated database state:
+
+```bash
+SIGNLATCH_COMPLETION_WORKER_ENABLED=true pnpm completion:run -- <provider-envelope-id>
+SIGNLATCH_COMPLETION_EVIDENCE_ENABLED=true pnpm completion:evidence -- <workflow-uuid>
+```
+
+Both commands require `DATABASE_URL`, the eSign read credentials, an absolute private
+`SIGNLATCH_ARTIFACT_ROOT`, and an absolute `SIGNLATCH_PRIVATE_EVIDENCE_ROOT`. The
+completion evidence command refuses operator-supplied hashes and writes a new private
+file with exclusive-create permissions.
 
 ## 7. Evidence and public claim verification
 
@@ -94,7 +117,7 @@ authorization step.
 
 ```bash
 pnpm test:browser
-pnpm operations:restore-probe
+TEST_DATABASE_URL=postgresql://... pnpm operations:restore-probe
 pnpm evidence:links
 ```
 

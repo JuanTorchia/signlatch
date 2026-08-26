@@ -22,8 +22,8 @@ deployment, media publication, and submission remain explicit human decisions.
 
 - checksum-tracked migration runner, two consecutive executions against the disposable
   PostgreSQL database: PASS; the second execution applied no migrations.
-- `pnpm check`: PASS — 65 unit tests, lint, type generation, TypeScript, and production build.
-- isolated PostgreSQL suite: PASS — 26 integration tests, including one-unit dispatch
+- `pnpm check`: PASS — 67 unit tests, lint, type generation, TypeScript, and production build.
+- isolated PostgreSQL suite: PASS — 27 integration tests, including one-unit dispatch
   budget accounting and expired-lease recovery into reconciliation.
 - `pnpm test:browser`: PASS — six browser boundary tests.
 - attack harness, privacy scan, manifest verification, and link scan: PASS — five
@@ -31,3 +31,8 @@ deployment, media publication, and submission remain explicit human decisions.
 
 These are fixture and local infrastructure results. They do not satisfy the live sandbox
 journey or authorize a provider call.
+
+The completion evidence path now derives the executed digest and timeline digest from
+correlated database state, hashes provider identifiers, refuses manual claimed hashes,
+and stages only to an absolute private path behind an independent gate. Its fixture
+tests are included in the counts above; no live-completion claim was created.

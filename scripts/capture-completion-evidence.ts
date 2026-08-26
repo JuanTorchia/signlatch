@@ -1,2 +1,30 @@
-import{createHash}from"node:crypto";
-const input=process.argv[2]?JSON.parse(process.argv[2])as Record<string,unknown>:{};for(const key of["workflowId","providerEnvelopeId","executedArtifactSha256","timelineDigest"]){if(typeof input[key]!=="string")throw new Error(`Missing sanitized completion field: ${key}`);}const evidence={schema:"signlatch.completion-evidence.v1",capturedAt:new Date().toISOString(),status:"live-demonstrated",claim:"Authenticated Foxit eSign completion with independently hashed executed bytes",workflowId:input.workflowId,providerEnvelopeIdHash:createHash("sha256").update(String(input.providerEnvelopeId)).digest("hex"),executedArtifactSha256:input.executedArtifactSha256,timelineDigest:input.timelineDigest};process.stdout.write(`${JSON.stringify({...evidence,evidenceSha256:createHash("sha256").update(JSON.stringify(evidence)).digest("hex")},null,2)}\n`);
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+import { database } from "../src/server/database";
+import { buildCompletionEvidence } from "../src/server/provider/completion-evidence";
+
+async function main() {
+  if (process.env.SIGNLATCH_COMPLETION_EVIDENCE_ENABLED !== "true") {
+    throw new Error("Completion evidence capture requires its independent live gate");
+  }
+  const workflowId = process.argv[2];
+  if (!workflowId) throw new Error("Usage: pnpm completion:evidence -- <workflow-uuid>");
+  const configuredRoot = process.env.SIGNLATCH_PRIVATE_EVIDENCE_ROOT?.trim();
+  if (!configuredRoot || !path.isAbsolute(configuredRoot)) {
+    throw new Error("SIGNLATCH_PRIVATE_EVIDENCE_ROOT must be an absolute private path");
+  }
+
+  const sql = database();
+  try {
+    const evidence = await buildCompletionEvidence(sql, workflowId, new Date());
+    await mkdir(configuredRoot, { recursive: true });
+    const target = path.join(configuredRoot, `${workflowId}-completion.json`);
+    await writeFile(target, `${JSON.stringify(evidence, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+    process.stdout.write(`${JSON.stringify({ status: "staged-private", evidenceSha256: evidence.evidenceSha256 })}\n`);
+  } finally {
+    await sql.end();
+  }
+}
+
+void main();

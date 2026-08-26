@@ -21,7 +21,9 @@ claim that production is provisioned. Deployment remains a separate human gate.
    to web or workers.
 3. Run `pnpm db:migrate`. The runner serializes execution with a PostgreSQL advisory
    lock, applies numeric migration files transactionally, records checksums, and rejects
-   checksum drift. The Compose equivalent is `docker compose --profile operations run --rm migrate`.
+   checksum drift. The local Compose equivalent is
+   `docker compose --profile operations run --rm migrate`; production must replace the
+   sample Compose database role with a dedicated least-privilege migration identity.
 4. Run the tenant, budget, restore, and artifact-integrity probes.
 5. Start the web service with the dispatch-worker profile disabled.
 6. Enable a worker only after its story gate passes and an operator authorizes it.
