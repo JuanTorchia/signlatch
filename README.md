@@ -52,8 +52,9 @@ This repository is the public system of record from day zero. The implemented
 foundation includes exact approval v2, a five-category attack harness, durable review
 and dispatch stores race-tested against PostgreSQL, raw-body webhook verification, and
 a real Foxit MCP preparation run with sanitized evidence. The eSign client and completion
-path are fixture-tested but no live eSign delivery is claimed. Production provisioning,
-deployment, and provider dispatch remain separate human gates.
+path are fixture-tested but no live eSign delivery is claimed. A fixture-first revision is
+deployed at <https://signlatch.juanchi.dev/>; deploying a newer revision and enabling any
+provider effect remain separate human gates.
 
 Current milestone: **M5 — provider closure pending one authorized sandbox journey**.
 The exact human latch, controlled dispatch, authenticated event lifecycle, evidence
@@ -62,6 +63,10 @@ remains disabled by default and cannot be inferred from fixture results.
 
 See [docs/roadmap.md](docs/roadmap.md) for milestone gates and evidence required
 before each integration is enabled.
+
+The initial procurement scenario and its measurable value hypothesis are documented in
+[docs/procurement-use-case.md](docs/procurement-use-case.md). Values there are evaluation
+targets, not claimed customer outcomes.
 
 Postgres integration tests require an isolated test database:
 

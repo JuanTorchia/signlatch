@@ -36,3 +36,26 @@ The completion evidence path now derives the executed digest and timeline digest
 correlated database state, hashes provider identifiers, refuses manual claimed hashes,
 and stages only to an absolute private path behind an independent gate. Its fixture
 tests are included in the counts above; no live-completion claim was created.
+
+## 2026-08-26 post-deployment reversible completion audit
+
+- `pnpm check`: PASS — 70 unit tests after the operator gate parser correction,
+  lint, type generation, TypeScript, and production build.
+- isolated PostgreSQL 17 suite: PASS — 27 integration tests; the disposable
+  container was removed after execution.
+- `pnpm operations:restore-probe`: PASS — five required schema boundaries found.
+- `pnpm test:browser`: PASS — six browser tests, including 320-pixel keyboard use,
+  judge journey, dispatch denial, and truthful fixture completion.
+- `pnpm test:harness`, `pnpm test:attack`, and `pnpm test:contract`: PASS — five
+  mutation categories, 19 attack tests, and four provider-boundary contracts.
+- evidence verification, privacy scan, and link validation: PASS — zero privacy
+  findings and zero broken links across 29 Markdown files.
+- operator commands with fictitious identifiers and all live gates absent: PASS —
+  dispatch, completion retrieval, and completion evidence each failed closed before
+  database or provider access.
+
+The documented `pnpm operator:live-proof -- --workflow ...` invocation previously
+misparsed pnpm's separator. The parser now accepts exactly one optional separator,
+rejects unknown/duplicate/malformed arguments and budgets other than one, validates
+lowercase SHA-256 values, and checks the exact immediate authorization id before opening
+the database. No provider call was made during this audit.

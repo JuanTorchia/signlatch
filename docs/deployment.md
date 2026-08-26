@@ -1,7 +1,9 @@
 # Deployment operations
 
-This document describes the intended Bulbasaur container deployment. It does not
-claim that production is provisioned. Deployment remains a separate human gate.
+This document describes the Bulbasaur container deployment and its operator procedure.
+Revision `cbfc34af857b96db940ef704ded9c4edf96a50f3` was deployed fixture-first at
+<https://signlatch.juanchi.dev/> on 2026-08-26 UTC. The public runtime has all
+provider-effect gates disabled. Deploying a later revision remains a separate human gate.
 
 ## Services and trust boundaries
 
@@ -60,3 +62,19 @@ executable digest, module root, and working directory. Never log secret values.
 Application rollback uses the prior immutable image. Database rollback is forward-only:
 restore from the verified backup when a migration cannot be corrected safely. Never
 delete or rewrite audit history to make it match an application narrative.
+
+## Current Bulbasaur record
+
+- Coolify application: `vid1oudxcb82gplp9t3vtcgo`
+- PostgreSQL resource: `1pciuuldotk533ocrrsxsade`
+- Persistent volume: `vid1oudxcb82gplp9t3vtcgo-data`
+- Successful deployment: `6uox8gxy7x48fzun2eeflvrs`
+- Restic snapshot: `a2db12f6`; the database dump was restored and validated with
+  `pg_restore --list`.
+- HTTP redirects to HTTPS, HTTPS returns 200, HSTS is present, and the container
+  healthcheck is healthy.
+
+GitHub OAuth is not configured in this deployment, so the public experience is
+intentionally a read-only fixture showcase. Database runtime and migration credentials
+currently share the generated Coolify role; splitting them is a production-hardening
+task before authenticated multi-user use.

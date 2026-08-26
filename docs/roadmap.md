@@ -19,7 +19,7 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [x] Durable outbox and stable provider idempotency key
 - [x] Ambiguous-timeout reconciliation path
 - [x] Append-only audit event schema
-- [ ] Production database provisioning
+- [x] Production database provisioning with verified backup and restored dump
 - [x] Transactional, locked and checksum-verified migration automation
 - [x] Outbox worker lease and retry budget
 - [x] Fail-closed provider adapter contract
@@ -53,4 +53,4 @@ is not marked complete until code, tests and reproducible evidence exist.
 - [x] End-to-end fixture browser journey and negative demo
 - [x] Reproducible setup and architecture documentation
 - [ ] Recorded demo video
-- [ ] Concrete procurement buyer story with measurable value
+- [x] Concrete procurement buyer story with measurable evaluation targets

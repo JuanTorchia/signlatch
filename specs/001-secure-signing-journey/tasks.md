@@ -232,8 +232,14 @@
 - [x] T104 Run pnpm check twice from a clean checkout and record only sanitized results in docs/verification.md
 - [x] T105 Run TEST_DATABASE_URL=postgresql://... pnpm test:integration twice against an isolated database and record sanitized results in docs/verification.md
 - [ ] T106 Run the fixture journey, attack matrix, and one separately authorized live journey from specs/001-secure-signing-journey/quickstart.md
+  - Reversible fixture, browser, attack, contract, integration, restore, privacy,
+    and fail-closed operator gates passed again on 2026-08-26. The task remains
+    open solely because its separately authorized live journey has not run.
 - [x] T107 Review public wording for dated credit cost, scoped tamper evidence, legal boundary, and implementation status in README.md and docs/
 - [ ] T108 Obtain final human go/no-go for deployment, public evidence, live dispatch, media, and submission as separate release decisions in docs/release-checklist.md
+  - Deployment and existing sanitized fixture evidence were separately authorized
+    and completed on 2026-08-26. Live provider, webhook, media, and submission
+    decisions remain open and independent.
 
 ---
 

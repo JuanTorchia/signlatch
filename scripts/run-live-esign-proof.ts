@@ -6,28 +6,16 @@ import { artifactRootFromEnv, FilesystemArtifactStore } from "../src/server/arti
 import { database } from "../src/server/database";
 import { ExactFoxitDispatchAdapter } from "../src/server/foxit/exact-dispatch-adapter";
 import { FoxitESignClient, foxitESignConfigFromEnv } from "../src/server/foxit/esign-client";
+import { assertLiveProofAuthorization, parseLiveProofArguments } from "../src/server/operator/live-proof-gate";
 import { ESignDispatchStore } from "../src/server/workflow/esign-dispatch-store";
 
-const args = new Map<string, string>();
-for (let index = 2; index < process.argv.length; index += 2) {
-  const key = process.argv[index];
-  const value = process.argv[index + 1];
-  if (key?.startsWith("--") && value) args.set(key.slice(2), value);
-}
-
 async function main() {
-  const required = ["workflow", "review-digest", "artifact-sha256", "recipient", "budget", "authorization-id"];
-  for (const key of required) if (!args.get(key)) throw new Error(`Live proof gate missing --${key}`);
-  if (args.get("budget") !== "1") throw new Error("Live proof budget must equal exactly one");
-  if (process.env.SIGNLATCH_ESIGN_ENQUEUE_ENABLED !== "true"
-    || process.env.SIGNLATCH_ESIGN_WORKER_ENABLED !== "true"
-    || process.env.SIGNLATCH_LIVE_PROOF_AUTHORIZATION_ID !== args.get("authorization-id")) {
-    throw new Error("Live proof is disabled without matching immediate human authorization");
-  }
+  const args = parseLiveProofArguments(process.argv.slice(2));
+  assertLiveProofAuthorization(args, process.env);
 
   const sql = database();
   try {
-    const workflowId = args.get("workflow")!;
+    const workflowId = args.workflow;
     const checks = await sql<Array<{
       snapshot_digest: string;
       artifact_sha256: string;
@@ -40,12 +28,12 @@ async function main() {
       where w.workflow_id=${workflowId}
     `;
     const current = checks[0];
-    if (current?.snapshot_digest !== args.get("review-digest")
-      || current?.artifact_sha256 !== args.get("artifact-sha256")) {
+    if (current?.snapshot_digest !== args["review-digest"]
+      || current?.artifact_sha256 !== args["artifact-sha256"]) {
       throw new Error("Live proof digests do not match current workflow");
     }
     if (current.snapshot_payload.recipients.length !== 1
-      || current.snapshot_payload.recipients[0].email.toLowerCase() !== args.get("recipient")!.toLowerCase()) {
+      || current.snapshot_payload.recipients[0].email.toLowerCase() !== args.recipient.toLowerCase()) {
       throw new Error("Authorized recipient does not match exact review");
     }
 
@@ -68,10 +56,10 @@ async function main() {
       schema: "signlatch.live-esign-private.v1",
       capturedAt: new Date().toISOString(),
       workflowId,
-      reviewDigest: args.get("review-digest"),
-      artifactSha256: args.get("artifact-sha256"),
+      reviewDigest: args["review-digest"],
+      artifactSha256: args["artifact-sha256"],
       providerEnvelopeIdHash: createHash("sha256").update(result.providerEnvelopeId).digest("hex"),
-      authorizationIdHash: createHash("sha256").update(args.get("authorization-id")!).digest("hex"),
+      authorizationIdHash: createHash("sha256").update(args["authorization-id"]).digest("hex"),
     };
     const configuredEvidenceRoot=process.env.SIGNLATCH_PRIVATE_EVIDENCE_ROOT?.trim();
     if(configuredEvidenceRoot&&!path.isAbsolute(configuredEvidenceRoot))throw new Error("SIGNLATCH_PRIVATE_EVIDENCE_ROOT must be absolute");
