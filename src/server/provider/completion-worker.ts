@@ -41,14 +41,36 @@ export class CompletionWorker {
     }
     const bytes = await this.client.downloadExecutedDocument(envelopeId);
     const artifact = await this.artifacts.putPdf(bytes);
-    await this.sql`
+    const inserted = await this.sql<Array<{
+      artifact_sha256: string;
+      actual_size: number | string;
+      storage_key: string;
+    }>>`
       insert into executed_documents (
         dispatch_id, artifact_sha256, actual_size, storage_key, provider_envelope_id
       ) values (
         ${dispatch.dispatch_id}, ${artifact.sha256}, ${artifact.size},
         ${artifact.storageKey}, ${envelopeId}
       ) on conflict(dispatch_id) do nothing
+      returning artifact_sha256, actual_size, storage_key
     `;
-    return artifact;
+    if (inserted[0]) return artifact;
+
+    const canonical = await this.sql<Array<{
+      artifact_sha256: string;
+      actual_size: number | string;
+      storage_key: string;
+    }>>`
+      select artifact_sha256, actual_size, storage_key
+      from executed_documents where dispatch_id = ${dispatch.dispatch_id}
+    `;
+    if (!canonical[0]) throw new Error("Executed document changed concurrently");
+    return {
+      id: `sha256:${canonical[0].artifact_sha256}`,
+      sha256: canonical[0].artifact_sha256,
+      size: Number(canonical[0].actual_size),
+      mediaType: "application/pdf",
+      storageKey: canonical[0].storage_key,
+    };
   }
 }

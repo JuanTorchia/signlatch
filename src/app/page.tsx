@@ -8,7 +8,7 @@ const workflow = [
   { step: "01", title: "Prepare", description: "The agent turns a plain request into a reviewable document with Foxit MCP." },
   { step: "02", title: "Inspect", description: "Deterministic checks bind the exact PDF hash, recipients, and Foxit provenance." },
   { step: "03", title: "Approve", description: "A person sees the exact artifact and unlocks the irreversible handoff." },
-  { step: "04", title: "Sign", description: "Foxit eSign returns the executed document with its audit trail." },
+  { step: "04", title: "Sign", description: "The implemented Foxit eSign boundary awaits a separately authorized live proof with a consenting signer." },
 ];
 
 const safeguards = [
@@ -22,6 +22,7 @@ export default async function Home() {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get("signlatch_session")?.value;
   const secret = process.env.AUTH_SESSION_SECRET;
+  const authenticationAvailable = Boolean(process.env.GITHUB_OAUTH_CLIENT_ID && process.env.GITHUB_OAUTH_CLIENT_SECRET && process.env.SIGNLATCH_GITHUB_OPERATORS);
   const session = sessionToken && secret ? parseSession(sessionToken, secret) : null;
   const csrfToken = session && sessionToken && secret ? createCsrfToken(sessionToken, secret) : "";
   return (
@@ -35,7 +36,7 @@ export default async function Home() {
           <div className="nav-links">
             <a className="nav-link" href="#demo">{session ? "Private workspace" : "Safe showcase"}</a>
             <a className="nav-link" href="#architecture">Architecture</a>
-            {session ? <form action="/api/auth/signout" method="post"><button className="nav-link" type="submit">Sign out</button></form> : <a className="nav-link" href="/api/auth/login">Sign in</a>}
+            {session ? <form action="/api/auth/signout" method="post"><button className="nav-link" type="submit">Sign out</button></form> : authenticationAvailable ? <a className="nav-link" href="/api/auth/login">Sign in</a> : <span className="nav-link" aria-label="Private access unavailable">Fixture mode</span>}
           </div>
         </nav>
 
@@ -86,7 +87,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <PreparationDemo authenticated={Boolean(session)} csrfToken={csrfToken} />
+      <PreparationDemo authenticated={Boolean(session)} authenticationAvailable={authenticationAvailable} csrfToken={csrfToken} />
       {!session && <FixtureApprovalDemo />}
 
       <section id="workflow" className="workflow shell">

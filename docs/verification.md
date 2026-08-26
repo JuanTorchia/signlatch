@@ -92,3 +92,23 @@ The provider lifecycle now treats `folder_completed` as nonterminal evidence and
 requires verified `folder_executed` before executed-document retrieval. These are
 local contract and fixture results only; no live folder was created and no signature
 request was sent.
+
+## 2026-08-26 post-deploy audit remediation
+
+- Exact dispatch now distinguishes bounded known-safe retry, permanent provider
+  denial, and ambiguous reconciliation; safe retries become permanent after three
+  attempts. PostgreSQL integration tests cover all dispositions and budget release.
+- A completion insert conflict now rereads and returns the canonical executed-document
+  row instead of reporting a losing worker's local hash.
+- The public fixture demonstrates a positive local approval followed by mutation
+  invalidation, while generating zero application-effect requests.
+- Unconfigured OAuth controls are hidden, fixture/live copy is explicit, and the
+  production build emits CSP with `frame-ancestors`, X-Frame-Options, Referrer-Policy,
+  and Permissions-Policy.
+- `pnpm check`: PASS — 76 unit tests, lint, type generation, TypeScript, and build.
+- isolated PostgreSQL 17: PASS — 31 integration tests; disposable container removed.
+- Playwright: PASS — six browser tests, including positive latch and read-only public
+  journey. Attack and Foxit contract suites remain 19/19 and 6/6.
+
+This remediation is local and not deployed. It does not authorize a push, deployment,
+OAuth configuration, Foxit call, or signing journey.

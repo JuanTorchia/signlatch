@@ -21,7 +21,7 @@ Purpose: Evaluation draft prepared through Foxit PDF Services.
 Payment terms: Net 30.
 Authority notice: This draft is not approved and must not be sent for signature without explicit human approval.`;
 
-export function PreparationDemo({ authenticated = false, csrfToken = "" }: { authenticated?: boolean; csrfToken?: string }) {
+export function PreparationDemo({ authenticated = false, authenticationAvailable = false, csrfToken = "" }: { authenticated?: boolean; authenticationAvailable?: boolean; csrfToken?: string }) {
   const [prompt, setPrompt] = useState(DEFAULT_PROMPT);
   const [result, setResult] = useState<PreparationResult | null>(null);
   const [error, setError] = useState("");
@@ -58,8 +58,8 @@ export function PreparationDemo({ authenticated = false, csrfToken = "" }: { aut
     <section id="demo" className="demo shell" aria-labelledby="demo-title">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Live Foxit MCP boundary</p>
-          <span className="live-proof">Real API · 1 credit per conversion</span>
+          <p className="eyebrow">Foxit MCP authority boundary</p>
+          <span className="live-proof">Public fixture · live operation separately gated</span>
         </div>
         <h2 id="demo-title">Prepare the exact artifact. Keep signing latched.</h2>
       </div>
@@ -72,7 +72,11 @@ export function PreparationDemo({ authenticated = false, csrfToken = "" }: { aut
             <p>Artifact SHA-256: <code>{PUBLIC_SHOWCASE.artifactSha256}</code></p>
             <p>Recipient: {PUBLIC_SHOWCASE.recipient}</p>
             <p>{PUBLIC_SHOWCASE.findings.join(" · ")}</p>
-            <a className="button button-secondary" href="/api/auth/login">Sign in for the private workspace</a>
+            {authenticationAvailable ? (
+              <a className="button button-secondary" href="/api/auth/login">Sign in for the private workspace</a>
+            ) : (
+              <p className="latch-reason">Private workspace access is not enabled in this deployment.</p>
+            )}
           </div>
         ) : (
         <form className="prompt-panel" onSubmit={submit}>

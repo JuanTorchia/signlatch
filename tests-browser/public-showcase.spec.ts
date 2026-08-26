@@ -9,6 +9,7 @@ test("anonymous showcase is sanitized and has no effect controls", async ({ page
   await expect(page.getByText("Sanitized fixture · zero external effects")).toBeVisible();
   await expect(page.getByText("Public showcase is read-only")).toBeVisible();
   await expect(page.getByRole("button", { name: /Prepare PDF/i })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /Sign in for the private workspace/i })).toBeVisible();
+  await expect(page.getByText("Private workspace access is not enabled in this deployment.")).toBeVisible();
+  await expect(page.getByRole("link", { name: /Sign in/i })).toHaveCount(0);
   expect(effectRequests).toEqual([]);
 });
