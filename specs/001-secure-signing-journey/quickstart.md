@@ -70,6 +70,17 @@ This step consumes provider resources and is not part of routine validation. An
 authorized operator must enable a one-operation budget and explicitly confirm the
 test tenant, recipient, artifact digest, and provider account immediately before run.
 
+Before requesting that authorization, verify configuration without making a network
+call or revealing values:
+
+```bash
+pnpm operator:live-preflight -- --phase all
+```
+
+Expected while safely parked: `activationGatesClosed` is `true`. The command exits
+nonzero and lists only missing variable names until dispatch and completion credentials
+are complete. It must never print configured values.
+
 ```bash
 pnpm operator:live-proof -- \
   --workflow <uuid> \

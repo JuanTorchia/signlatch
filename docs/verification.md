@@ -59,3 +59,18 @@ misparsed pnpm's separator. The parser now accepts exactly one optional separato
 rejects unknown/duplicate/malformed arguments and budgets other than one, validates
 lowercase SHA-256 values, and checks the exact immediate authorization id before opening
 the database. No provider call was made during this audit.
+
+## 2026-08-26 live-readiness preflight
+
+- The masked Coolify inventory contained 24 production/preview entries covering
+  session, database, storage, public showcase, body limit, and four closed effect
+  gates. It contained no GitHub OAuth or `FOXIT_ESIGN_*` variable names.
+- `pnpm operator:live-preflight -- --phase all` was added as a network-free,
+  value-redacting prerequisite. It exits nonzero until configuration is complete and
+  also exits nonzero if any effect gate is already open before authorization.
+- `pnpm test`: PASS — 74 tests, including missing-name redaction, dispatch/completion
+  phase separation, open-gate detection, and pnpm separator parsing.
+- `pnpm typecheck`: PASS.
+
+This proves configuration is not ready for T074/T087 while all effect gates remain
+closed. It does not authorize adding credentials, exposing the webhook, or dispatching.

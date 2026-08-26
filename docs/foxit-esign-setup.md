@@ -34,3 +34,7 @@ After the authenticated completed event, executed-document retrieval and evidenc
 capture have their own `SIGNLATCH_COMPLETION_WORKER_ENABLED` and
 `SIGNLATCH_COMPLETION_EVIDENCE_ENABLED` gates. Evidence is generated from the correlated
 database rows with provider identifiers hashed; operators do not supply claimed digests.
+
+Run `pnpm operator:live-preflight -- --phase all` before asking for a live grant. The
+preflight performs no network request, prints only missing variable names and open gate
+names, and exits nonzero until configuration is complete with every effect gate closed.
