@@ -6,6 +6,9 @@ All boxes require a fresh human go/no-go; one approval does not authorize anothe
   migrations — explicitly authorized and completed on 2026-08-26 UTC.
 - [x] Publish the sanitized fixture evidence already bound to that revision — explicitly
   authorized and completed on 2026-08-26 UTC.
+- [x] Deploy fixture UI and webhook hardening revision
+  `6694bbf11e4d88e2fe03eeeb6780995de8e64982` with every Foxit effect gate
+  remaining disabled — explicitly authorized and completed on 2026-08-26 UTC.
 - [ ] Enable one live Foxit PDF preparation operation.
 - [ ] Enable and execute one live Foxit eSign dispatch to the named consenting signer.
 - [ ] Expose the webhook callback for that sandbox journey.

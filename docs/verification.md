@@ -142,3 +142,17 @@ event and does not authorize enabling provider-effect gates.
 Full-page desktop and mobile screenshots were visually inspected and recorded in the
 challenge evidence workspace. These results describe the local working tree; they are
 not evidence that the current production deployment contains this UI revision.
+
+## 2026-08-26 production UI and UX deployment
+
+Revision `6694bbf11e4d88e2fe03eeeb6780995de8e64982` was deployed through Coolify
+as deployment `x3naoxq8cpdxcfmsuimhwice`. The application reported healthy with
+zero restarts, HTTPS returned 200 with the expected security headers, and the
+five Foxit effect gates remained `false` before and after deployment.
+
+A headless Chromium production journey verified five initially disabled
+mutation controls, simulated approval, persistent provider lock, recipient
+mutation invalidation, disabled controls after invalidation, and no horizontal
+overflow at 320 CSS pixels. It observed no console or page errors and no
+SignLatch/provider-effect requests. The only non-GET traffic was Cloudflare
+operational telemetry under `/cdn-cgi/`.
