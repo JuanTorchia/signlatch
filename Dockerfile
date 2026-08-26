@@ -2,7 +2,7 @@
 FROM node:20-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable
+RUN corepack enable && corepack prepare pnpm@10.34.5 --activate
 WORKDIR /app
 
 FROM base AS dependencies
@@ -16,7 +16,7 @@ RUN pnpm build
 FROM base AS runtime
 ENV NODE_ENV=production
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y ca-certificates python3 python3-venv qpdf tini \
+    && apt-get install --no-install-recommends -y ca-certificates curl python3 python3-venv qpdf tini \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
