@@ -5,8 +5,8 @@ credentials, document text, and private paths are excluded.
 
 ## 2026-08-26 final fixture gate
 
-- clean detached worktree at `ed286f4`, `pnpm install --frozen-lockfile`: PASS.
-- `pnpm check`, two consecutive clean-worktree runs: PASS — 64 unit tests, lint,
+- clean detached worktree at `9cb3e0a`, `pnpm install --frozen-lockfile`: PASS.
+- `pnpm check`, two consecutive clean-worktree runs: PASS — 65 unit tests, lint,
   type generation, TypeScript, and production build on each run.
 - isolated PostgreSQL suite, two consecutive clean-worktree runs: PASS — 23 tests each.
 - clean-worktree `pnpm test:browser`: PASS — six fixture/browser boundary tests.
