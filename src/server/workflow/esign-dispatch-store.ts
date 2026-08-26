@@ -29,9 +29,9 @@ export class ESignDispatchStore {
     });
   }
 
-  async leaseNext(workerId: string, now: Date, leaseSeconds: number) {
+  async leaseNext(workerId: string, now: Date, leaseSeconds: number, workflowId?: string) {
     return this.sql.begin(async tx=>{const rows=await tx<Array<{dispatch_id:string;workflow_id:string;tenant_id:string;idempotency_key:string;approval_digest:string;document_sha256:string;attempt_count:number;lease_generation:number}>>`
-      with candidate as (select dispatch_id from esign_dispatches where status='pending' order by created_at for update skip locked limit 1)
+      with candidate as (select dispatch_id from esign_dispatches where status='pending' and (${workflowId??null}::uuid is null or workflow_id=${workflowId??null}::uuid) order by created_at for update skip locked limit 1)
       update esign_dispatches d set status='processing',leased_by=${workerId},lease_expires_at=${now}+(${leaseSeconds}*interval '1 second'),attempt_count=d.attempt_count+1,lease_generation=d.lease_generation+1,updated_at=now()
       from candidate where d.dispatch_id=candidate.dispatch_id returning d.dispatch_id,d.workflow_id,d.tenant_id,d.idempotency_key,d.approval_digest,d.document_sha256,d.attempt_count,d.lease_generation`;
       return rows[0] ? {...rows[0],leasedBy:workerId} : null;});

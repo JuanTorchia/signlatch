@@ -1,7 +1,2 @@
-/**
- * Safe placeholder for the separately deployed dispatch worker.
- * The compose profile remains disabled until the real eSign adapter is implemented.
- */
-throw new Error(
-  "Dispatch worker is disabled until the exact-approval and Foxit eSign phases are complete",
-);
+import path from"node:path";import{randomUUID}from"node:crypto";import{database}from"../src/server/database";import{FilesystemArtifactStore}from"../src/server/artifacts/filesystem-store";import{FoxitESignClient,foxitESignConfigFromEnv}from"../src/server/foxit/esign-client";import{ExactFoxitDispatchAdapter}from"../src/server/foxit/exact-dispatch-adapter";import{ESignDispatchStore}from"../src/server/workflow/esign-dispatch-store";import{processNextExactDispatch}from"../src/server/workflow/outbox-worker";
+async function main(){if(process.env.SIGNLATCH_ESIGN_WORKER_ENABLED!=="true")throw new Error("eSign worker requires its independent live gate");const sql=database();const store=new ESignDispatchStore(sql);const adapter=new ExactFoxitDispatchAdapter(sql,new FoxitESignClient(foxitESignConfigFromEnv()),new FilesystemArtifactStore(path.join(process.cwd(),".data","artifacts")));const result=await processNextExactDispatch(store,adapter,`worker:${randomUUID()}`,new Date());process.stdout.write(`${JSON.stringify({result})}\n`);await sql.end();}void main();
