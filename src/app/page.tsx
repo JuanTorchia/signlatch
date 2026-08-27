@@ -4,6 +4,8 @@ import { createCsrfToken, parseSession } from "@/server/auth/session";
 import { PreparationDemo } from "./preparation-demo";
 import { FixtureApprovalDemo } from "./fixture-approval-demo";
 import { PUBLIC_SHOWCASE } from "@/core/evidence/showcase";
+import { database } from "@/server/database";
+import { ReviewStore } from "@/server/workflow/review-store";
 
 const authorityEvents = [
   { time: "09:41:02", event: "Foxit PDF prepared", state: "Reversible" },
@@ -20,6 +22,7 @@ export default async function Home() {
   const authenticationAvailable = Boolean(process.env.GITHUB_OAUTH_CLIENT_ID && process.env.GITHUB_OAUTH_CLIENT_SECRET && process.env.SIGNLATCH_GITHUB_OPERATORS);
   const session = sessionToken && secret ? parseSession(sessionToken, secret) : null;
   const csrfToken = session && sessionToken && secret ? createCsrfToken(sessionToken, secret) : "";
+  const workflows = session ? await new ReviewStore(database()).listOwnedWorkflows(session.tenantId, session.principalId) : [];
   return (
     <main>
       <section className="hero shell">
@@ -29,7 +32,7 @@ export default async function Home() {
             <span>SignLatch</span>
           </a>
           <div className="nav-links">
-            <a className="nav-link" href="#demo">{session ? "Private workspace" : "Safe showcase"}</a>
+            <a className="nav-link" href={session ? "#agreements" : "#demo"}>{session ? "My agreements" : "Safe showcase"}</a>
             <a className="nav-link" href="#architecture">Architecture</a>
             {session ? <form action="/api/auth/signout" method="post"><button className="nav-link" type="submit">Sign out</button></form> : authenticationAvailable ? <a className="nav-link" href="/api/auth/login">Sign in</a> : <span className="nav-link" aria-label="Private access unavailable">Fixture mode</span>}
           </div>
@@ -44,7 +47,7 @@ export default async function Home() {
               changes, approval is invalidated before Foxit eSign can act.
             </p>
             <div className="hero-actions">
-              <a className="button button-primary" href="#fixture-approval-title">Inspect the exact approval</a>
+              <a className="button button-primary" href={session ? "#agreements" : "#fixture-approval-title"}>{session ? "Open my agreements" : "Inspect the exact approval"}</a>
               <a className="button button-secondary" href="https://github.com/JuanTorchia/signlatch">
                 Follow the build
               </a>
@@ -71,6 +74,15 @@ export default async function Home() {
       </section>
 
       <PreparationDemo authenticated={Boolean(session)} authenticationAvailable={authenticationAvailable} csrfToken={csrfToken} />
+      {session ? <section id="agreements" className="agreements shell" aria-labelledby="agreements-title">
+        <div className="section-heading"><p className="eyebrow">Your workspace</p><h2 id="agreements-title">Agreements that need your attention</h2></div>
+        {workflows.length ? <div className="agreement-list">{workflows.map((workflow) => <a className="agreement-row" href={`/workflows/${workflow.workflowId}`} key={workflow.workflowId}>
+          <div><strong>{workflow.supplierName || "Supplier agreement"}</strong><span>{workflow.recipientEmail ?? "Recipient pending"}</span></div>
+          <span className={`status ${workflow.state === "approved" ? "status-approved" : "status-blocked"}`}>{humanWorkflowState(workflow.state)}</span>
+          <time dateTime={workflow.updatedAt.toISOString()}>{workflow.updatedAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
+          <b>Open review →</b>
+        </a>)}</div> : <p className="workspace-empty">No agreements yet. Prepare one above to start the review flow.</p>}
+      </section> : null}
       {!session && <FixtureApprovalDemo />}
 
       <section id="workflow" className="workflow shell">
@@ -101,4 +113,11 @@ export default async function Home() {
       </footer>
     </main>
   );
+}
+
+function humanWorkflowState(state: string): string {
+  if (state === "approved") return "Approved, not sent";
+  if (state === "review") return "Needs approval";
+  if (state === "sent" || state === "completed") return "Sent";
+  return "In progress";
 }

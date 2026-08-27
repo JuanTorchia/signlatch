@@ -37,11 +37,29 @@ test("exact approval is one-way and stale review is rejected", async () => {
   const { reviews, value } = await fixture(); const approvals = new ApprovalStore(sql);
   const now = new Date("2026-08-26T12:05:00Z");
   const granted = await approvals.approveExact(value, now); assert.equal(granted.generation, 1);
-  await assert.rejects(() => approvals.approveExact({ ...value, nonce: "integration-nonce-999999" }, now), /awaiting approval/);
+  await assert.rejects(() => approvals.approveExact({ ...value, nonce: "integration-nonce-999999" }, now), /fresh approval/);
   await reviews.createMutation(value.workflowId, tenant, (input) => ({ ...input, artifactSha256: "c".repeat(64) }));
   await assert.rejects(() => approvals.approveExact({ ...value, nonce: "integration-nonce-888888" }, now), /stale/);
   const rows = await sql<Array<{ invalidated_at: Date | null }>>`select invalidated_at from exact_approvals`;
   assert.ok(rows[0].invalidated_at);
+});
+
+test("an expired approval can be renewed against the unchanged exact review", async () => {
+  const { value } = await fixture();
+  const approvals = new ApprovalStore(sql);
+  await approvals.approveExact(value, new Date("2026-08-26T12:05:00Z"));
+  const renewed = await approvals.approveExact({
+    ...value,
+    nonce: "integration-renewal-012345",
+    issuedAt: "2026-08-26T12:16:00Z",
+    expiresAt: "2026-08-26T12:31:00Z",
+  }, new Date("2026-08-26T12:16:00Z"));
+  assert.equal(renewed.generation, 2);
+  const rows = await sql<Array<{ generation: number; invalidated_at: Date | null }>>`
+    select generation, invalidated_at from exact_approvals order by generation
+  `;
+  assert.ok(rows[0].invalidated_at);
+  assert.equal(rows[1].invalidated_at, null);
 });
 
 test("expired exact approval is rejected without changing workflow authority", async () => {

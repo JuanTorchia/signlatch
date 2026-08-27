@@ -22,8 +22,10 @@ export async function GET(_request: Request, context: RouteContext<"/api/artifac
       headers: {
         "Cache-Control": "private, no-store",
         "Content-Disposition": `inline; filename="signlatch-${sha.slice(0, 12)}.pdf"`,
+        "Content-Security-Policy": "default-src 'none'; frame-ancestors 'self'; sandbox",
         "Content-Type": "application/pdf",
         "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "SAMEORIGIN",
       },
     });
   } catch (error) {

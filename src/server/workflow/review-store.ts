@@ -28,6 +28,41 @@ export class ReviewStore {
     return workflowId;
   }
 
+  async listOwnedWorkflows(tenantId: string, ownerPrincipalId: string, limit = 10): Promise<Array<{
+    workflowId: string;
+    state: string;
+    supplierName: string;
+    recipientEmail: string | null;
+    updatedAt: Date;
+  }>> {
+    const boundedLimit = Math.max(1, Math.min(limit, 25));
+    const rows = await this.sql<Array<{
+      workflow_id: string;
+      state: string;
+      supplier_name: string;
+      recipient_email: string | null;
+      updated_at: Date;
+    }>>`
+      select w.workflow_id, w.state,
+        i.payload->'supplier'->>'name' as supplier_name,
+        r.snapshot_payload->'recipients'->0->>'email' as recipient_email,
+        w.updated_at
+      from agreement_workflows w
+      join agreement_intents i on i.workflow_id = w.workflow_id and i.version = w.active_intent_version
+      left join review_snapshots r on r.workflow_id = w.workflow_id and r.version = w.active_review_version
+      where w.tenant_id = ${tenantId} and w.owner_principal_id = ${ownerPrincipalId}
+      order by w.updated_at desc
+      limit ${boundedLimit}
+    `;
+    return rows.map((row) => ({
+      workflowId: row.workflow_id,
+      state: row.state,
+      supplierName: row.supplier_name,
+      recipientEmail: row.recipient_email,
+      updatedAt: row.updated_at,
+    }));
+  }
+
   async getOwnedIntent(workflowId: string, tenantId: string): Promise<{ workflow: WorkflowRow; intent: AgreementIntent } | null> {
     const rows = await this.sql<Array<WorkflowRow & { payload: AgreementIntent }>>`
       select w.workflow_id, w.tenant_id, w.owner_principal_id, w.state,
@@ -75,10 +110,14 @@ export class ReviewStore {
   async getReview(workflowId: string, tenantId: string): Promise<Record<string, unknown> | null> {
     const rows = await this.sql<Array<Record<string, unknown>>>`
       select w.workflow_id, w.state, r.version, r.snapshot_digest, r.snapshot_payload,
-        r.material_diff, d.artifact_sha256, d.actual_size, d.provenance_sha256
+        r.material_diff, d.artifact_sha256, d.actual_size, d.provenance_sha256,
+        a.expires_at as approval_expires_at, a.consumed_at as approval_consumed_at,
+        a.invalidated_at as approval_invalidated_at,
+        (a.expires_at > now() and a.consumed_at is null and a.invalidated_at is null) as approval_is_fresh
       from agreement_workflows w
       join review_snapshots r on r.workflow_id = w.workflow_id and r.version = w.active_review_version
       join document_versions d on d.workflow_id = w.workflow_id and d.version = w.active_document_version
+      left join exact_approvals a on a.approval_id = w.active_approval_id
       where w.workflow_id = ${workflowId} and w.tenant_id = ${tenantId}
     `;
     return rows[0] ?? null;

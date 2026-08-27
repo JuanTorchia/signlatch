@@ -19,7 +19,16 @@ export class ApprovalStore {
       `;
       const current = rows[0];
       if (!current) throw new Error("Workflow not found");
-      if (current.state !== "review") throw new Error("Workflow is not awaiting approval");
+      if (current.state === "approved") {
+        const expired = await tx`
+          update exact_approvals set invalidated_at = coalesce(invalidated_at, ${now})
+          where workflow_id = ${input.workflowId} and invalidated_at is null and consumed_at is null
+            and expires_at <= ${now}
+        `;
+        if (expired.count !== 1) throw new Error("Workflow already has a fresh approval");
+      } else if (current.state !== "review") {
+        throw new Error("Workflow is not awaiting approval");
+      }
       if (current.active_review_version !== input.reviewVersion || current.snapshot_digest !== input.reviewDigest) {
         throw new Error("Review snapshot is stale");
       }
