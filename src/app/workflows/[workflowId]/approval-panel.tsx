@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function ApprovalPanel(props: { workflowId: string; reviewVersion: number; reviewDigest: string; csrf: string; canApprove: boolean; state: string; materialDiff: unknown[]; approvalIsFresh: boolean; approvalExpiresAt: string | null }) {
+  const router = useRouter();
   const [state, setState] = useState(props.state);
   const [confirmed, setConfirmed] = useState(false);
   const [message, setMessage] = useState(props.approvalIsFresh ? "Approval recorded. No email has been sent." : "Review the PDF and recipient before confirming.");
@@ -12,6 +14,7 @@ export function ApprovalPanel(props: { workflowId: string; reviewVersion: number
     const body = await response.json() as { error?: string };
     setState(response.ok ? "approved" : "invalidated");
     setMessage(response.ok ? "Exact approval recorded. Any material mutation will invalidate it." : body.error ?? "Approval was denied.");
+    if (response.ok) router.refresh();
   }
   const canReview = props.canApprove && (state === "review" || (state === "approved" && !props.approvalIsFresh));
   const canSubmit = canReview && confirmed;
