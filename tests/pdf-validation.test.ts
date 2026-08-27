@@ -3,11 +3,17 @@ import test from "node:test";
 
 import {
   PdfValidationError,
+  qpdfReportsEncryption,
   SandboxedPdfValidator,
   type PdfParserRunner,
 } from "../src/server/artifacts/pdf-validator";
 
 const minimalPdf = new TextEncoder().encode("%PDF-1.7\n1 0 obj<<>>endobj\nstartxref\n9\n%%EOF\n");
+
+test("distinguishes qpdf's unencrypted status from encrypted input", () => {
+  assert.equal(qpdfReportsEncryption("File is not encrypted\n1\nNo syntax errors"), false);
+  assert.equal(qpdfReportsEncryption("File is encrypted\n1\nNo syntax errors"), true);
+});
 
 test("accepts a structurally valid bounded PDF", async () => {
   const runner: PdfParserRunner = async () => ({ valid: true, encrypted: false, pages: 1, outputBytes: 32 });

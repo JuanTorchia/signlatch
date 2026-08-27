@@ -79,11 +79,15 @@ function runQpdf(command: string, pdfPath: string): Promise<PdfParserResult> {
       const pageMatch = text.match(/(?:^|\n)(\d+)(?:\n|$)/);
       resolve({
         valid: code === 0,
-        encrypted: /encrypted/i.test(text),
+        encrypted: qpdfReportsEncryption(text),
         pages: pageMatch ? Number(pageMatch[1]) : 0,
         outputBytes: output.byteLength,
         reason: code === 0 ? undefined : "qpdf check failed",
       });
     });
   });
+}
+
+export function qpdfReportsEncryption(output: string): boolean {
+  return /(?:^|\n)File is encrypted(?:\n|$)/i.test(output);
 }
