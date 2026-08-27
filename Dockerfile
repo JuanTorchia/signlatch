@@ -29,6 +29,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=uv-bin /uv /uvx /usr/local/bin/
 COPY --from=foxit-source /opt/foxit-pdf-api-mcp-server /opt/foxit-pdf-api-mcp-server
+ENV UV_DEFAULT_INDEX=https://pypi.org/simple
 RUN cd /opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
     && uv sync --frozen --no-dev
 ENV FOXIT_MCP_COMMAND=/usr/local/bin/uv \
