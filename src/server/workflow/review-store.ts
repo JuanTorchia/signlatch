@@ -51,6 +51,7 @@ export class ReviewStore {
       join agreement_intents i on i.workflow_id = w.workflow_id and i.version = w.active_intent_version
       left join review_snapshots r on r.workflow_id = w.workflow_id and r.version = w.active_review_version
       where w.tenant_id = ${tenantId} and w.owner_principal_id = ${ownerPrincipalId}
+        and w.active_review_version is not null
       order by w.updated_at desc
       limit ${boundedLimit}
     `;
