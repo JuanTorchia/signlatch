@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { cookies } from "next/headers";
 
 import { issueSession, type SessionRole } from "@/server/auth/session";
+import { publicOrigin } from "@/server/auth/public-origin";
 
 type GitHubUser = { id: number; login: string };
 
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
     path: "/",
     maxAge: 8 * 60 * 60,
   });
-  return Response.redirect(new URL("/", request.url));
+  return Response.redirect(new URL("/", publicOrigin(process.env)));
 }
 
 function required(name: string): string {

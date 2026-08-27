@@ -57,6 +57,10 @@ Inject secrets from host-managed files or environment configuration excluded fro
 repository. Run `pnpm runtime:verify` during container startup to pin the Foxit MCP
 executable digest, module root, and working directory. Never log secret values.
 
+Set `SIGNLATCH_PUBLIC_ORIGIN` to the canonical HTTPS origin. OAuth redirects derive
+from this trusted value rather than a container-local request URL, which can be
+`localhost` behind a reverse proxy.
+
 ## Rollback
 
 Application rollback uses the prior immutable image. Database rollback is forward-only:

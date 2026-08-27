@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 
+import { publicOrigin } from "@/server/auth/public-origin";
+
 export async function GET(request: Request) {
   const clientId = process.env.GITHUB_OAUTH_CLIENT_ID;
   if (!clientId) return new Response("Authentication is not configured", { status: 503 });
@@ -12,7 +14,7 @@ export async function GET(request: Request) {
     path: "/api/auth/callback",
     maxAge: 600,
   });
-  const callback = new URL("/api/auth/callback", request.url);
+  const callback = new URL("/api/auth/callback", publicOrigin(process.env));
   const authorize = new URL("https://github.com/login/oauth/authorize");
   authorize.searchParams.set("client_id", clientId);
   authorize.searchParams.set("redirect_uri", callback.toString());
