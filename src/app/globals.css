@@ -146,6 +146,23 @@ h2 { max-width:820px; margin:0; font-size:clamp(38px,5vw,64px); line-height:1; l
 .boundary-table .boundary-latch { border-left:4px solid var(--signal); padding-left:16px; }
 .footer { display:flex; justify-content:space-between; gap:24px; padding:30px 0 46px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
 .agreements { padding:72px 0; border-top:1px solid var(--line); }
+.workspace-home { min-height:100vh; }
+.workspace-home .nav { border-bottom:1px solid var(--line); }
+.workspace-home .nav form { margin:0; }
+.workspace-home .nav button { border:0; padding:0; background:transparent; cursor:pointer; }
+.workspace-hero { padding:76px 0 54px; }
+.workspace-hero h1 { font-size:clamp(48px,6vw,76px); }
+.workspace-hero .lede { max-width:720px; margin-top:20px; }
+.workspace-home .agreements { padding-top:34px; }
+.workspace-section-heading { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.workspace-section-heading h2 { font-size:28px; letter-spacing:-.03em; }
+.workspace-section-heading>span { color:var(--muted); font-size:13px; }
+.workspace-help { display:grid; grid-template-columns:.75fr 1.25fr; gap:64px; margin-top:18px; margin-bottom:72px; padding:34px; border-radius:16px; background:var(--green); color:white; }
+.workspace-help h2 { font-size:32px; }
+.workspace-help ol { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin:0; padding:0; overflow:hidden; border-radius:10px; background:rgba(255,255,255,.18); list-style:none; }
+.workspace-help li { display:grid; gap:8px; padding:20px; background:#214a3e; }
+.workspace-help li strong { color:#ffb7a5; }
+.workspace-help li span { color:#c9d9d3; font-size:13px; line-height:1.45; }
 .agreement-list { margin-top:34px; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:var(--surface); }
 .agreement-row { display:grid; grid-template-columns:minmax(220px,1fr) auto 90px auto; gap:24px; align-items:center; padding:20px 22px; text-decoration:none; border-bottom:1px solid var(--line); }
 .agreement-row:last-child { border-bottom:0; }
@@ -208,4 +225,5 @@ h2 { max-width:820px; margin:0; font-size:clamp(38px,5vw,64px); line-height:1; l
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button:hover{transform:none}}
 @media(max-width:540px){.nav{align-items:flex-start;gap:14px}.nav-links{flex-wrap:wrap;justify-content:flex-end}.fixture-state{grid-template-columns:1fr}.mutation-matrix{min-width:0;padding:18px}.mutation-buttons{grid-template-columns:1fr}.fixture-actions,.fixture-actions .button{width:100%}}
 @media(max-width:860px){.agreement-row{grid-template-columns:1fr auto}.agreement-row time{display:none}.agreement-row b{grid-column:1/-1}.review-header{flex-direction:column}.progress-steps{grid-template-columns:1fr}.review-columns{grid-template-columns:1fr}.document-card iframe{height:520px}}
+@media(max-width:860px){.workspace-help{grid-template-columns:1fr;gap:24px}.workspace-help ol{grid-template-columns:1fr}}
 @media(max-width:540px){.workflow-review{padding-top:28px}.workflow-review h1{font-size:42px}.delivery-banner{grid-template-columns:1fr}.card-heading{align-items:flex-start;flex-direction:column}.card-heading .button{width:100%}.document-card iframe{height:430px}.review-facts div{grid-template-columns:1fr;gap:4px}.action-card{grid-template-columns:1fr}.agreement-row{grid-template-columns:1fr}.agreement-row>.status{justify-self:start}.timeline-card time{display:block;min-width:0;margin-bottom:4px}}

@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
 
 import { createCsrfToken, parseSession } from "@/server/auth/session";
 import { PreparationDemo } from "./preparation-demo";
@@ -23,6 +24,24 @@ export default async function Home() {
   const session = sessionToken && secret ? parseSession(sessionToken, secret) : null;
   const csrfToken = session && sessionToken && secret ? createCsrfToken(sessionToken, secret) : "";
   const workflows = session ? await new ReviewStore(database()).listOwnedWorkflows(session.tenantId, session.principalId) : [];
+  if (session) {
+    return <main className="workspace-home">
+      <nav className="nav shell" aria-label="Workspace navigation">
+        <Link className="brand" href="/" aria-label="SignLatch workspace"><span className="brand-mark" aria-hidden="true">SL</span><span>SignLatch</span></Link>
+        <div className="nav-links"><a className="nav-link" href="#agreements">My agreements</a><form action="/api/auth/signout" method="post"><button className="nav-link" type="submit">Sign out</button></form></div>
+      </nav>
+      <section className="workspace-hero shell">
+        <p className="eyebrow">Private workspace</p>
+        <h1>Your agreements</h1>
+        <p className="lede">Open an agreement to review the PDF, confirm who will receive it, and decide whether it can move forward.</p>
+      </section>
+      <AgreementsList workflows={workflows} />
+      <section className="workspace-help shell" aria-labelledby="workspace-help-title">
+        <div><p className="step-label">How it works</p><h2 id="workspace-help-title">Nothing is sent by surprise</h2></div>
+        <ol><li><strong>Review</strong><span>Read the PDF and verify the recipient.</span></li><li><strong>Approve</strong><span>Lock that exact version for 15 minutes.</span></li><li><strong>Send</strong><span>A separate action emails it through Foxit.</span></li></ol>
+      </section>
+    </main>;
+  }
   return (
     <main>
       <section className="hero shell">
@@ -74,15 +93,6 @@ export default async function Home() {
       </section>
 
       <PreparationDemo authenticated={Boolean(session)} authenticationAvailable={authenticationAvailable} csrfToken={csrfToken} />
-      {session ? <section id="agreements" className="agreements shell" aria-labelledby="agreements-title">
-        <div className="section-heading"><p className="eyebrow">Your workspace</p><h2 id="agreements-title">Agreements that need your attention</h2></div>
-        {workflows.length ? <div className="agreement-list">{workflows.map((workflow) => <a className="agreement-row" href={`/workflows/${workflow.workflowId}`} key={workflow.workflowId}>
-          <div><strong>{workflow.supplierName || "Supplier agreement"}</strong><span>{workflow.recipientEmail ?? "Recipient pending"}</span></div>
-          <span className={`status ${workflow.state === "approved" ? "status-approved" : "status-blocked"}`}>{humanWorkflowState(workflow.state)}</span>
-          <time dateTime={workflow.updatedAt.toISOString()}>{workflow.updatedAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
-          <b>Open review →</b>
-        </a>)}</div> : <p className="workspace-empty">No agreements yet. Prepare one above to start the review flow.</p>}
-      </section> : null}
       {!session && <FixtureApprovalDemo />}
 
       <section id="workflow" className="workflow shell">
@@ -113,6 +123,20 @@ export default async function Home() {
       </footer>
     </main>
   );
+}
+
+type WorkspaceWorkflow = Awaited<ReturnType<ReviewStore["listOwnedWorkflows"]>>[number];
+
+function AgreementsList({ workflows }: { workflows: WorkspaceWorkflow[] }) {
+  return <section id="agreements" className="agreements shell" aria-labelledby="agreements-title">
+    <div className="workspace-section-heading"><h2 id="agreements-title">Needs your attention</h2><span>{workflows.length} {workflows.length === 1 ? "agreement" : "agreements"}</span></div>
+    {workflows.length ? <div className="agreement-list">{workflows.map((workflow) => <a className="agreement-row" href={`/workflows/${workflow.workflowId}`} key={workflow.workflowId}>
+      <div><strong>{workflow.supplierName || "Supplier agreement"}</strong><span>{workflow.recipientEmail ?? "Recipient pending"}</span></div>
+      <span className={`status ${workflow.state === "approved" ? "status-approved" : "status-blocked"}`}>{humanWorkflowState(workflow.state)}</span>
+      <time dateTime={workflow.updatedAt.toISOString()}>{workflow.updatedAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</time>
+      <b>Review agreement →</b>
+    </a>)}</div> : <p className="workspace-empty">No agreements need your attention.</p>}
+  </section>;
 }
 
 function humanWorkflowState(state: string): string {
