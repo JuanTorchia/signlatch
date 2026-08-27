@@ -67,8 +67,10 @@ not depend on HTTP transport.
 At official repository revision `db16f9d0f18b878a07f41621e708dbb78bc13e4c`,
 package version `0.2.3`, the installed console script points to the obsolete
 module `foxit_pdf_api_mcp` and exits with `ModuleNotFoundError`. SignLatch uses
-the package's real module entrypoint internally. Remove this workaround only
-after verifying a newer official release.
+the package's real module entrypoint internally. Production also invokes `uv`
+with `--frozen --no-sync` so the unprivileged runtime cannot mutate the pinned
+environment. Remove these workarounds only after verifying a newer official
+release.
 
 ## M3 authority boundary
 

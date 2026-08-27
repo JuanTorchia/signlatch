@@ -14,7 +14,7 @@ test("pins the Foxit Python module arguments", () => {
     ...credentials,
     FOXIT_MCP_ARGS: "run attacker-command",
   });
-  assert.deepEqual(config.args, ["run", "python", "-m", "foxit_pdf_api_mcp_server.main"]);
+  assert.deepEqual(config.args, ["run", "--frozen", "--no-sync", "python", "-m", "foxit_pdf_api_mcp_server.main"]);
 });
 
 test("requires an absolute MCP executable in production", () => {

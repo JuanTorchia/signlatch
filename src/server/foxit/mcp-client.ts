@@ -43,7 +43,7 @@ export function foxitMcpConfigFromEnv(
 
   return {
     command: validatedCommand(env),
-    args: ["run", "python", "-m", "foxit_pdf_api_mcp_server.main"],
+    args: ["run", "--frozen", "--no-sync", "python", "-m", "foxit_pdf_api_mcp_server.main"],
     cwd: validatedWorkingDirectory(env),
     moduleRoot: env.FOXIT_MCP_MODULE_ROOT?.trim() || undefined,
     apiHost: required("FOXIT_CLOUD_API_HOST"),
