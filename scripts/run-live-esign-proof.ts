@@ -48,7 +48,11 @@ async function main() {
     const result = await adapter.send(lease);
     if (result.status === "sent") await store.markSent(lease, result.providerEnvelopeId, result.correlationId);
     else {
-      await store.markReconcile(lease, "correlationId" in result ? result.correlationId : undefined);
+      await store.markReconcile(
+        lease,
+        "correlationId" in result ? result.correlationId : undefined,
+        "diagnostic" in result ? result.diagnostic : undefined,
+      );
       throw new Error(`Provider result requires reconciliation: ${result.status}`);
     }
 
