@@ -56,9 +56,9 @@ export class ESignDispatchStore {
     if (!/^[A-Za-z0-9._:-]{8,160}$/.test(authorizationId)) throw new Error("Authorization id is invalid");
     const authorizationIdHash = createHash("sha256").update(authorizationId).digest("hex");
     return this.sql.begin(async (tx) => {
-      const workflows = await tx<Array<{ workflow_id: string }>>`
-        select workflow_id from agreement_workflows
-        where workflow_id=${workflowId} and state='reconcile' for update
+      const workflows = await tx<Array<{ workflow_id: string; state: string }>>`
+        select workflow_id,state from agreement_workflows
+        where workflow_id=${workflowId} and state in ('reconcile','dispatching') for update
       `;
       if (workflows.length !== 1) throw new Error("Workflow is not awaiting reconciliation");
       const dispatches = await tx<Array<{ provider_operation_id: string }>>`
@@ -85,7 +85,7 @@ export class ESignDispatchStore {
           and reserved>=${operation.reserved_units}
       `;
       if (budget.count !== 1) throw new Error("Provider budget row missing or already released");
-      const workflow = await tx`update agreement_workflows set state='failed',updated_at=now() where workflow_id=${workflowId} and state='reconcile'`;
+      const workflow = await tx`update agreement_workflows set state='failed',updated_at=now() where workflow_id=${workflowId} and state in ('reconcile','dispatching')`;
       if (workflow.count !== 1) throw new Error("Workflow state changed concurrently");
       return { status: "failed" as const, evidenceSha256, authorizationIdHash };
     });
