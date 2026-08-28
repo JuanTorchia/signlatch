@@ -17,10 +17,10 @@ const LIFECYCLE_BY_ACTION: Record<string, FoxitLifecycle | undefined> = {
 };
 
 const ALLOWED_STATUS_BY_ACTION: Record<string, ReadonlySet<string> | undefined> = {
-  Created: new Set(["DRAFT", "SHARED"]),
+  Created: new Set(["CREATED", "DRAFT", "SHARED"]),
   "Invitation Sent": new Set(["SHARED"]),
-  Opened: new Set(["SHARED", "PARTIALLY SIGNED"]),
-  Viewed: new Set(["SHARED", "PARTIALLY SIGNED"]),
+  Opened: new Set(["SHARED", "PARTIALLY SIGNED", "EXECUTED"]),
+  Viewed: new Set(["SHARED", "PARTIALLY SIGNED", "EXECUTED"]),
   Signed: new Set(["COMPLETED", "EXECUTED"]),
   "Folder Executed": new Set(["EXECUTED"]),
 };
