@@ -11,9 +11,13 @@ Implemented and fixture-demonstrated: the exact approval latch, five-category at
 matrix, role separation, tenant isolation, provider budgets, fail-closed reconciliation,
 webhook authentication, lifecycle monotonicity, and evidence privacy checks.
 
-Implemented but not yet live-demonstrated: Foxit eSign Fusion credential boundary, controlled
-dispatch, webhook persistence, and final-document verification. Live delivery and human
-completion must only be claimed after one separately authorized sandbox journey.
+Live-demonstrated under a one-envelope authorization: the Foxit eSign Fusion credential
+boundary, controlled dispatch to a consenting recipient, human signing, authenticated
+activity reconciliation, and final-document verification. Foxit reported the envelope as
+executed; SignLatch imported eight lifecycle events and independently validated and hashed
+the 60,071-byte executed PDF before marking the workflow complete. The public evidence
+contains hashes and lifecycle facts but excludes the recipient, provider ID, signature and
+document contents.
 
 SignLatch is technical workflow protection, not legal advice and not a claim that an
 electronic signature is legally sufficient in every jurisdiction.

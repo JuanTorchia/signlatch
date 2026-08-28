@@ -9,9 +9,13 @@ All boxes require a fresh human go/no-go; one approval does not authorize anothe
 - [x] Deploy fixture UI and webhook hardening revision
   `6694bbf11e4d88e2fe03eeeb6780995de8e64982` with every Foxit effect gate
   remaining disabled — explicitly authorized and completed on 2026-08-26 UTC.
-- [ ] Enable one live Foxit PDF preparation operation.
-- [ ] Enable and execute one live Foxit eSign dispatch to the named consenting signer.
-- [ ] Expose the webhook callback for that sandbox journey.
+- [x] Enable one bounded Foxit PDF preparation operation — explicitly authorized,
+  completed through the official Foxit MCP server and recorded under `evidence/m3/`.
+- [x] Enable and execute one bounded Foxit eSign dispatch to the named consenting signer —
+  explicitly authorized and completed on 2026-08-28 UTC.
+- [x] Reconcile authenticated Foxit activity and independently validate/hash the executed
+  PDF — explicitly authorized and completed on 2026-08-28 UTC. The webhook was not
+  required because the authenticated activity API supplied the lifecycle record.
 - [ ] Publish the English or Spanish build post.
 - [ ] Publish the demo video.
 - [ ] Submit the competition form and accept its terms.
@@ -19,5 +23,5 @@ All boxes require a fresh human go/no-go; one approval does not authorize anothe
 Record revision, exact artifact/review digest, account, recipient, budget, expiry, and
 decision timestamp for live provider actions. A technical PASS never checks these boxes.
 
-The checked decisions above do not authorize redeploying the current worktree. The six
-remaining decisions still require their own immediate human go/no-go.
+The checked decisions above do not authorize another provider operation. Publication of
+posts/video and the competition submission remain separate human go/no-go decisions.

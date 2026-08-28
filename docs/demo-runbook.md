@@ -10,11 +10,14 @@
 
 This path makes no provider call, sends no envelope, and consumes no credits.
 
-## Live step — explicit authorization required
+## Recorded live proof
 
-Do not enable live preparation, eSign enqueue, a dispatch worker, or webhook exposure
-during the fixture demo. A live proof requires the bounded checklist in
-`docs/foxit-esign-setup.md`, current credentials, one consenting signer, and immediate
-human authorization. A queued operation is not proof of provider delivery. Only a
-correlated provider envelope plus authenticated events and independently hashed final
-bytes may be described as live-demonstrated.
+The public page now presents the sanitized result of the separately authorized live
+journey. Show `evidence/live-completion-2026-08-28.json`: Foxit reached `executed`,
+SignLatch imported eight authenticated lifecycle events, and the validated final PDF is
+60,071 bytes with SHA-256
+`058c3e619e459d016ac779ba07bab0dca4891e70a49c4c0365e00fc526175e79`.
+
+Do not enable live preparation, enqueue, dispatch or completion workers during judging.
+The recorded proof is sufficient and no new provider effect is authorized. The executed
+document itself remains private.
