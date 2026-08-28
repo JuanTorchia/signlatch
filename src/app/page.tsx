@@ -143,5 +143,7 @@ function humanWorkflowState(state: string): string {
   if (state === "approved") return "Approved, not sent";
   if (state === "review") return "Needs approval";
   if (state === "sent" || state === "completed") return "Sent";
+  if (state === "failed") return "Failed, not sent";
+  if (state === "reconcile") return "Delivery unconfirmed";
   return "In progress";
 }

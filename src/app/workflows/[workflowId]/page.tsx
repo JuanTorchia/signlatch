@@ -10,6 +10,7 @@ import { DispatchPanel } from "./dispatch-panel";
 import { Timeline, type TimelineEvent } from "./timeline";
 import { TimelineStore } from "@/server/provider/timeline-store";
 import { ESignDispatchStore } from "@/server/workflow/esign-dispatch-store";
+import { RetryPanel } from "./retry-panel";
 
 export default async function WorkflowReviewPage({ params }: PageProps<"/workflows/[workflowId]">) {
   const { workflowId } = await params;
@@ -92,6 +93,7 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
         csrf={createCsrfToken(token!, secret!)} canApprove={can(session.roles, "approve")} state={String(review.state)}
         materialDiff={(review.material_diff as unknown[]) ?? []} approvalIsFresh={approvalIsFresh} approvalExpiresAt={approvalExpiresAt?.toISOString() ?? null} />
       <DispatchPanel workflowId={workflowId} csrf={createCsrfToken(token!, secret!)} canDispatch={can(session.roles, "dispatch")} workflowState={workflowState} dispatchEnabled={dispatchEnabled} approvalIsFresh={approvalIsFresh} />
+      {workflowState === "failed" ? <RetryPanel workflowId={workflowId} csrf={createCsrfToken(token!, secret!)} canRetry={can(session.roles, "prepare")} /> : null}
       {workflowState === "reconcile" && reconciliation ? <section className="review-card" aria-labelledby="reconciliation-title">
         <p className="step-label">Automatic safety check</p><h2 id="reconciliation-title">Reconciliation status</h2>
         <p className="action-status">{reconciliation.lookup_supported ? "SignLatch will look for the existing Foxit envelope without creating another one." : "Automatic lookup is paused until Foxit provides a documented lookup endpoint."}</p>

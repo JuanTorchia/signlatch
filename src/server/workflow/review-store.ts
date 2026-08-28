@@ -124,6 +124,59 @@ export class ReviewStore {
     return rows[0] ?? null;
   }
 
+  async retryFailedWorkflow(workflowId: string, tenantId: string, ownerPrincipalId: string): Promise<string> {
+    return this.sql.begin(async (tx) => {
+      const rows = await tx<Array<{
+        payload: AgreementIntent;
+        source_request_sha256: string;
+        unresolved_facts: string[];
+        artifact_sha256: string;
+        actual_size: number;
+        structural_validator: string;
+        provenance_sha256: string;
+        snapshot_payload: ReviewSnapshot["input"];
+        retry_workflow_id: string | null;
+      }>>`
+        select i.payload,i.source_request_sha256,i.unresolved_facts,
+          d.artifact_sha256,d.actual_size,d.structural_validator,d.provenance_sha256,
+          r.snapshot_payload,retry.workflow_id as retry_workflow_id
+        from agreement_workflows w
+        join agreement_intents i on i.workflow_id=w.workflow_id and i.version=w.active_intent_version
+        join document_versions d on d.workflow_id=w.workflow_id and d.version=w.active_document_version
+        join review_snapshots r on r.workflow_id=w.workflow_id and r.version=w.active_review_version
+        left join agreement_workflows retry on retry.retry_of_workflow_id=w.workflow_id
+        where w.workflow_id=${workflowId} and w.tenant_id=${tenantId}
+          and w.owner_principal_id=${ownerPrincipalId} and w.state='failed'
+        for update of w
+      `;
+      const source = rows[0];
+      if (!source) throw new Error("Only an owned failed workflow can be retried");
+      if (source.retry_workflow_id) return source.retry_workflow_id;
+      const retryWorkflowId = randomUUID();
+      const snapshot = createReviewSnapshot({ ...source.snapshot_payload, workflowId: retryWorkflowId });
+      await tx`
+        insert into agreement_workflows (workflow_id,tenant_id,owner_principal_id,state,
+          active_intent_version,active_document_version,active_review_version,retry_of_workflow_id)
+        values (${retryWorkflowId},${tenantId},${ownerPrincipalId},'review',1,1,1,${workflowId})
+      `;
+      await tx`
+        insert into agreement_intents (workflow_id,version,payload,source_request_sha256,unresolved_facts)
+        values (${retryWorkflowId},1,${tx.json(source.payload as unknown as JSONValue)},
+          ${source.source_request_sha256},${source.unresolved_facts})
+      `;
+      await tx`
+        insert into document_versions (workflow_id,version,artifact_sha256,actual_size,structural_validator,provenance_sha256)
+        values (${retryWorkflowId},1,${source.artifact_sha256},${source.actual_size},
+          ${source.structural_validator},${source.provenance_sha256})
+      `;
+      await tx`
+        insert into review_snapshots (workflow_id,version,document_version,snapshot_digest,snapshot_payload)
+        values (${retryWorkflowId},1,1,${snapshot.digest},${tx.json(snapshot.input as unknown as JSONValue)})
+      `;
+      return retryWorkflowId;
+    });
+  }
+
   async createMutation(workflowId: string, tenantId: string, mutate: (input: ReviewSnapshot["input"]) => ReviewSnapshot["input"]): Promise<ReviewSnapshot> {
     return this.sql.begin(async (tx) => {
       const rows = await tx<Array<{ active_review_version: number; snapshot_digest: string; snapshot_payload: ReviewSnapshot["input"] }>>`
