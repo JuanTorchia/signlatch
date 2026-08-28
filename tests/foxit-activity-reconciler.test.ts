@@ -30,4 +30,7 @@ test("rejects stale, future, oversized, and malformed activity histories", () =>
   assert.throws(() => parseActivityEvents({ details: { activities: [
     { action: "Signed", folderStatus: "COMPLETED", time: "31 Feb 2026, 00:00:00, UTC" },
   ] } }, "35613299", now), /timestamp/);
+  assert.throws(() => parseActivityEvents({ details: { activities: [
+    { action: "Folder Executed", folderStatus: "DECLINED", time: "28 Aug 2026, 00:15:33, PDT" },
+  ] } }, "35613299", now), /inconsistent/);
 });

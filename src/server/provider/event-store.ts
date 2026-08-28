@@ -10,10 +10,9 @@ export class ProviderEventStore {
     return this.sql.begin(async (tx) => {
       const rows = await tx<Array<{
         dispatch_id: string;
-        workflow_id: string;
         lifecycle_state: FoxitWebhookEvent["type"];
       }>>`
-        select dispatch_id, workflow_id, lifecycle_state
+        select dispatch_id, lifecycle_state
         from esign_dispatches
         where provider_envelope_id = ${event.envelopeId}
         for update
@@ -40,13 +39,6 @@ export class ProviderEventStore {
           update esign_dispatches
           set lifecycle_state = ${state}, updated_at = now()
           where dispatch_id = ${dispatch.dispatch_id}
-        `;
-      }
-      if (state === "executed") {
-        await tx`
-          update agreement_workflows
-          set state = 'completed', updated_at = now()
-          where workflow_id = ${dispatch.workflow_id} and state = 'sent'
         `;
       }
       return { duplicate: inserted.count === 0, state };

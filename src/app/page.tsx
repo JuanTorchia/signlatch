@@ -113,13 +113,13 @@ export default async function Home() {
         <div className="boundary-table" aria-label="SignLatch authority boundary">
           <div><span>Reversible side</span><strong>Prompt → Foxit MCP → Policy checks</strong><small>May prepare and inspect. Cannot authorize.</small></div>
           <div className="boundary-latch"><span>Human latch</span><strong>Exact digest + recipient + intent</strong><small>Any material mutation invalidates approval.</small></div>
-          <div><span>Commitment side</span><strong>Foxit eSign · live proof pending</strong><small>Separately gated, budgeted and operator-authorized.</small></div>
+          <div><span>Commitment side</span><strong>Foxit eSign · verified live</strong><small>A real envelope was sent, signed and executed under a one-envelope budget.</small></div>
         </div>
       </section>
 
       <footer className="footer shell">
         <span>SignLatch · Building in public for API World 2026</span>
-        <span>Fixture evidence, not marketing claims.</span>
+        <span>Fixture-safe demo backed by a verified Foxit eSign journey.</span>
       </footer>
     </main>
   );

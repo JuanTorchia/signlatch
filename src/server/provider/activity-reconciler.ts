@@ -16,6 +16,15 @@ const LIFECYCLE_BY_ACTION: Record<string, FoxitLifecycle | undefined> = {
   "Folder Executed": "executed",
 };
 
+const ALLOWED_STATUS_BY_ACTION: Record<string, ReadonlySet<string> | undefined> = {
+  Created: new Set(["DRAFT", "SHARED"]),
+  "Invitation Sent": new Set(["SHARED"]),
+  Opened: new Set(["SHARED", "PARTIALLY SIGNED"]),
+  Viewed: new Set(["SHARED", "PARTIALLY SIGNED"]),
+  Signed: new Set(["COMPLETED", "EXECUTED"]),
+  "Folder Executed": new Set(["EXECUTED"]),
+};
+
 export class FoxitActivityReconciler {
   constructor(
     private readonly client: ActivityClient,
@@ -56,6 +65,9 @@ export function parseActivityEvents(
     if (!type) continue;
     if (typeof folderStatus !== "string" || folderStatus.length > 32 || time.length > 80) {
       throw new Error("Foxit activity entry is invalid");
+    }
+    if (!ALLOWED_STATUS_BY_ACTION[action]?.has(folderStatus)) {
+      throw new Error("Foxit activity action and status are inconsistent");
     }
     const occurredAtMs = parseFoxitActivityTime(time);
     if (!Number.isFinite(occurredAtMs)
