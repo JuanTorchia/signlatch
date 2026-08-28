@@ -68,6 +68,7 @@ test("Fusion credentials remain server-only and createfolder receives the exact 
   assert.deepEqual(body.base64FileString, [request.documentBase64]);
   assert.equal(body.sendNow, true);
   assert.equal(body.custom_field1, request.idempotencyKey);
+  assert.equal(body.metadata, undefined);
   assert.deepEqual(body.parties, [
     {
       firstName: "Jane",
@@ -92,6 +93,30 @@ test("Fusion credentials remain server-only and createfolder receives the exact 
     },
   ]);
   assert.ok(!String(calls[0].init?.body).includes("secret"));
+});
+
+test("Foxit business errors returned with HTTP 200 are denied instead of reconciled", async () => {
+  const client = new FoxitESignClient(
+    config,
+    (async () => Response.json({
+      result: "error",
+      error_description: "metadata parameter is a mismatch",
+    })) as typeof fetch,
+  );
+  const result = await client.createEnvelope(request);
+  assert.deepEqual(result, {
+    status: "denied",
+    errorCode: "foxit-result-error",
+    diagnostic: {
+      phase: "response",
+      code: "provider-result-error",
+      httpStatus: 200,
+      contentType: "application/json",
+      responseBytes: 73,
+      responseSha256: "4268f1901846e8bd89336046c5e7628f2526acae89f75f9343cdc62796f530f3",
+      responseKeys: ["error_description", "result"],
+    },
+  });
 });
 
 test("server errors are ambiguous and credentials are redacted", async () => {

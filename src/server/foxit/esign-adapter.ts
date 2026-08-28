@@ -45,7 +45,7 @@ export function sanitizeProviderDiagnostic(value: unknown): ProviderDiagnostic |
   if (Number.isInteger(record.responseBytes) && Number(record.responseBytes) >= 0 && Number(record.responseBytes) <= 10 * 1024 * 1024 + 1) diagnostic.responseBytes = Number(record.responseBytes);
   if (typeof record.responseSha256 === "string" && /^[a-f0-9]{64}$/.test(record.responseSha256)) diagnostic.responseSha256 = record.responseSha256;
   if (Array.isArray(record.responseKeys)) {
-    const allowed = new Set(["folder", "folderId", "result", "error", "errorCode", "message"]);
+    const allowed = new Set(["folder", "folderId", "result", "error", "errorCode", "error_description", "message"]);
     diagnostic.responseKeys = record.responseKeys.filter((key): key is string => typeof key === "string" && allowed.has(key)).slice(0, 6);
   }
   return diagnostic;

@@ -22,6 +22,8 @@ type FoxitFolderResponse = {
   folderId?: string | number;
   custom_field1?: string;
   customField1?: string;
+  result?: unknown;
+  error_description?: unknown;
 };
 
 export class FoxitESignClient implements FoxitESignAdapter {
@@ -92,6 +94,18 @@ export class FoxitESignClient implements FoxitESignAdapter {
         return { status: "ambiguous", correlationId, diagnostic: { ...diagnostic, phase: "parse", code: "invalid-json" } };
       }
       const folderId = providerEnvelopeId(body.folder?.folderId ?? body.folderId);
+      if (!folderId && (body.result === "error" || typeof body.error_description === "string")) {
+        return {
+          status: "denied",
+          errorCode: "foxit-result-error",
+          diagnostic: {
+            ...diagnostic,
+            phase: "response",
+            code: "provider-result-error",
+            responseKeys: safeKeys(body),
+          },
+        };
+      }
       return folderId
         ? {
             status: "sent",
@@ -228,7 +242,7 @@ function safeContentType(value: string | null): string | undefined {
 
 function safeKeys(value: unknown): string[] | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
-  const allowed = new Set(["folder", "folderId", "result", "error", "errorCode", "message"]);
+  const allowed = new Set(["folder", "folderId", "result", "error", "errorCode", "error_description", "message"]);
   return Object.keys(value).filter((key) => allowed.has(key)).sort();
 }
 
@@ -284,10 +298,6 @@ function toCreateFolderPayload(input: ESignEnvelopeRequest) {
     sendNow: true,
     createEmbeddedSigningSession: false,
     custom_field1: input.idempotencyKey,
-    metadata: JSON.stringify({
-      approvalDigest: input.approvalDigest,
-      documentSha256: input.documentSha256,
-    }),
   };
 }
 
