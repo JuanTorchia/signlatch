@@ -111,10 +111,11 @@ export class SecurityStore {
       await tx`
         insert into provider_operations (
           operation_id, tenant_id, provider, operation_kind, idempotency_key,
-          request_digest, state, reserved_units
+          request_digest, state, reserved_units, created_at, updated_at
         ) values (
           ${operationId}, ${input.tenantId}, 'foxit', ${input.kind},
-          ${input.idempotencyKey}, ${input.requestDigest}, 'reserved', 1
+          ${input.idempotencyKey}, ${input.requestDigest}, 'reserved', 1,
+          ${input.now}, ${input.now}
         )
       `;
       return { operationId, state: "reserved", requestDigest: input.requestDigest, existing: false };

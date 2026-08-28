@@ -9,6 +9,7 @@ import { ApprovalPanel } from "./approval-panel";
 import { DispatchPanel } from "./dispatch-panel";
 import { Timeline, type TimelineEvent } from "./timeline";
 import { TimelineStore } from "@/server/provider/timeline-store";
+import { ESignDispatchStore } from "@/server/workflow/esign-dispatch-store";
 
 export default async function WorkflowReviewPage({ params }: PageProps<"/workflows/[workflowId]">) {
   const { workflowId } = await params;
@@ -19,6 +20,7 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
   const review = await new ReviewStore(database()).getReview(workflowId, session.tenantId);
   if (!review) notFound();
   const timeline = await new TimelineStore(database()).get(workflowId, session.tenantId).catch(() => []);
+  const reconciliation = await new ESignDispatchStore(database()).reconciliationStatus(workflowId, session.tenantId).catch(() => null);
   const snapshot = review.snapshot_payload as {
     artifactSha256: string;
     recipients: Array<{ id: string; email: string; order: number }>;
@@ -35,26 +37,27 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
   };
   const approvalExpiresAt = review.approval_expires_at ? new Date(String(review.approval_expires_at)) : null;
   const approvalIsFresh = String(review.state) === "approved" && review.approval_is_fresh === true;
+  const workflowState = String(review.state);
   const dispatchEnabled = process.env.SIGNLATCH_ESIGN_ENQUEUE_ENABLED === "true";
   return (
     <main className="shell workflow-review">
       <header className="review-header">
         <div><p className="eyebrow">Private signing workspace</p><h1>Review supplier agreement</h1></div>
-        <span className={`status ${approvalIsFresh ? "status-approved" : "status-blocked"}`}>
-          {approvalIsFresh ? "Approved, not sent" : "Not ready to send"}
+        <span className={`status ${approvalIsFresh || workflowState === "sent" ? "status-approved" : "status-blocked"}`}>
+          {workflowStatusLabel(workflowState, approvalIsFresh)}
         </span>
       </header>
       <section className="delivery-banner" aria-labelledby="review-status">
         <div className="delivery-icon" aria-hidden="true">✉</div>
         <div>
-          <h2 id="review-status">No email has been sent</h2>
-          <p>Approval only locks this exact PDF and recipient. Sending through Foxit is a separate, currently disabled action.</p>
+          <h2 id="review-status">{deliveryHeading(workflowState)}</h2>
+          <p>{deliveryCopy(workflowState)}</p>
         </div>
       </section>
       <ol className="progress-steps" aria-label="Signing progress">
         <li data-complete="true"><span>1</span><div><strong>PDF prepared</strong><small>Foxit generated and verified the document.</small></div></li>
-        <li data-complete={approvalIsFresh}><span>2</span><div><strong>{approvalIsFresh ? "Approval recorded" : "Approval required"}</strong><small>{approvalIsFresh && approvalExpiresAt ? `Valid until ${approvalExpiresAt.toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" })}.` : "Review and approve the exact snapshot."}</small></div></li>
-        <li data-complete="false"><span>3</span><div><strong>Email not sent</strong><small>Foxit dispatch remains disabled.</small></div></li>
+        <li data-complete={approvalWasRecorded(workflowState, approvalIsFresh)}><span>2</span><div><strong>{approvalStep(workflowState, approvalIsFresh, approvalExpiresAt).title}</strong><small>{approvalStep(workflowState, approvalIsFresh, approvalExpiresAt).detail}</small></div></li>
+        <li data-complete={workflowState === "sent"}><span>3</span><div><strong>{deliveryStep(workflowState).title}</strong><small>{deliveryStep(workflowState).detail}</small></div></li>
       </ol>
       <div className="review-columns">
         <section className="review-card document-card" aria-labelledby="artifact-title">
@@ -76,7 +79,7 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
           <section className="review-card" aria-labelledby="recipient-title">
             <p className="step-label">Recipient</p><h2 id="recipient-title">Who would receive it</h2>
             {snapshot.recipients.map((recipient) => <p className="recipient-email" key={recipient.id}>{recipient.email}</p>)}
-            <p className="muted-copy">One signature field on page {snapshot.fields[0]?.page ?? 1}. Nothing has been emailed.</p>
+            <p className="muted-copy">One signature field on page {snapshot.fields[0]?.page ?? 1}. {recipientDeliveryCopy(workflowState)}</p>
           </section>
           <section className="review-card compact-card" aria-labelledby="finding-title">
             <p className="step-label">Checks</p><h2 id="finding-title">Policy result</h2>
@@ -88,8 +91,63 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
       <ApprovalPanel workflowId={workflowId} reviewVersion={Number(review.version)} reviewDigest={String(review.snapshot_digest)}
         csrf={createCsrfToken(token!, secret!)} canApprove={can(session.roles, "approve")} state={String(review.state)}
         materialDiff={(review.material_diff as unknown[]) ?? []} approvalIsFresh={approvalIsFresh} approvalExpiresAt={approvalExpiresAt?.toISOString() ?? null} />
-      <DispatchPanel workflowId={workflowId} csrf={createCsrfToken(token!, secret!)} canDispatch={can(session.roles, "dispatch")} workflowState={String(review.state)} dispatchEnabled={dispatchEnabled} approvalIsFresh={approvalIsFresh} />
-      <Timeline events={timeline as unknown as TimelineEvent[]} />
+      <DispatchPanel workflowId={workflowId} csrf={createCsrfToken(token!, secret!)} canDispatch={can(session.roles, "dispatch")} workflowState={workflowState} dispatchEnabled={dispatchEnabled} approvalIsFresh={approvalIsFresh} />
+      {workflowState === "reconcile" && reconciliation ? <section className="review-card" aria-labelledby="reconciliation-title">
+        <p className="step-label">Automatic safety check</p><h2 id="reconciliation-title">Reconciliation status</h2>
+        <p className="action-status">{reconciliation.lookup_supported ? "SignLatch will look for the existing Foxit envelope without creating another one." : "Automatic lookup is paused until Foxit provides a documented lookup endpoint."}</p>
+        <dl className="review-facts"><div><dt>Checks completed</dt><dd>{reconciliation.attempt_count}</dd></div><div><dt>Next eligible check</dt><dd>{new Date(reconciliation.next_reconciliation_at).toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" })}</dd></div></dl>
+        <p className="muted-copy">Creating a replacement envelope remains blocked while delivery is unconfirmed.</p>
+      </section> : null}
+      <Timeline events={timeline as unknown as TimelineEvent[]} workflowState={workflowState} />
     </main>
   );
+}
+
+function deliveryHeading(state: string): string {
+  if (state === "sent") return "Foxit accepted the envelope";
+  if (state === "reconcile") return "Delivery is unconfirmed";
+  if (state === "dispatching") return "Delivery is in progress";
+  if (state === "failed") return "The delivery attempt failed";
+  return "No email has been sent";
+}
+
+function deliveryCopy(state: string): string {
+  if (state === "sent") return "Foxit returned an envelope identifier. The signing invitation should be verified in the recipient inbox and provider timeline.";
+  if (state === "reconcile") return "Foxit did not provide enough evidence to prove whether an invitation was sent. Do not resend while this attempt is investigated.";
+  if (state === "dispatching") return "One authorized attempt is underway. Starting another attempt is blocked.";
+  if (state === "failed") return "The provider attempt was denied or safely closed without a confirmed envelope.";
+  return "Approval only locks this exact PDF and recipient. Sending through Foxit is a separate action.";
+}
+
+function deliveryStep(state: string): { title: string; detail: string } {
+  if (state === "sent") return { title: "Envelope accepted", detail: "Foxit returned an envelope identifier." };
+  if (state === "reconcile") return { title: "Verification required", detail: "Delivery is unknown; duplicate sends are blocked." };
+  if (state === "dispatching") return { title: "Sending", detail: "One provider attempt is in progress." };
+  if (state === "failed") return { title: "Not sent", detail: "The attempt ended without a confirmed envelope." };
+  return { title: "Email not sent", detail: "A separate authorized dispatch is required." };
+}
+
+function recipientDeliveryCopy(state: string): string {
+  if (state === "sent") return "Foxit accepted an invitation for this address.";
+  if (state === "reconcile") return "Whether Foxit emailed this address is currently unknown.";
+  if (state === "dispatching") return "A single delivery attempt is in progress.";
+  return "Nothing has been emailed by SignLatch.";
+}
+
+function workflowStatusLabel(state: string, approvalIsFresh: boolean): string {
+  if (state === "sent") return "Sent to Foxit";
+  if (state === "reconcile") return "Delivery unconfirmed";
+  if (state === "dispatching") return "Delivery in progress";
+  if (state === "failed") return "Delivery failed";
+  return approvalIsFresh ? "Approved, not sent" : "Not ready to send";
+}
+
+function approvalWasRecorded(state: string, approvalIsFresh: boolean): boolean {
+  return approvalIsFresh || ["dispatching", "sent", "reconcile", "failed"].includes(state);
+}
+
+function approvalStep(state: string, approvalIsFresh: boolean, expiresAt: Date | null): { title: string; detail: string } {
+  if (["dispatching", "sent", "reconcile", "failed"].includes(state)) return { title: "Approval consumed", detail: "The exact approval was used by the recorded delivery attempt." };
+  if (approvalIsFresh) return { title: "Approval recorded", detail: expiresAt ? `Valid until ${expiresAt.toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" })}.` : "The exact snapshot is approved." };
+  return { title: "Approval required", detail: "Review and approve the exact snapshot." };
 }

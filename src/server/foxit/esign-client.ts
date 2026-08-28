@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type {
   ESignEnvelopeRequest,
   ESignResult,
@@ -17,8 +18,10 @@ type Config = {
 };
 
 type FoxitFolderResponse = {
-  folder?: { folderId?: string | number };
+  folder?: { folderId?: string | number; custom_field1?: string; customField1?: string };
   folderId?: string | number;
+  custom_field1?: string;
+  customField1?: string;
 };
 
 export class FoxitESignClient implements FoxitESignAdapter {
@@ -30,6 +33,12 @@ export class FoxitESignClient implements FoxitESignAdapter {
   }
 
   async createEnvelope(input: ESignEnvelopeRequest): Promise<ESignResult> {
+    let payload: ReturnType<typeof toCreateFolderPayload>;
+    try {
+      payload = toCreateFolderPayload(input);
+    } catch {
+      return { status: "denied", errorCode: "local-request-invalid", diagnostic: { phase: "local-validation", code: "payload-invalid" } };
+    }
     const controller = new AbortController();
     const timer = setTimeout(
       () => controller.abort(),
@@ -41,39 +50,57 @@ export class FoxitESignClient implements FoxitESignAdapter {
         new URL(this.config.envelopePath, this.config.baseUrl),
         {
           method: "POST",
+          redirect: "manual",
           signal: controller.signal,
           headers: {
             ...this.authHeaders(),
             "content-type": "application/json",
             "idempotency-key": input.idempotencyKey,
           },
-          body: JSON.stringify(toCreateFolderPayload(input)),
+          body: JSON.stringify(payload),
         },
       );
       const correlationId = response.headers.get("x-correlation-id") ?? undefined;
+      const baseDiagnostic = { phase: "response" as const, code: `http-${response.status}`, httpStatus: response.status, contentType: safeContentType(response.headers.get("content-type")) };
+      const bounded = await readBoundedText(response, 64 * 1024);
+      const diagnostic = bounded.truncated
+        ? { ...baseDiagnostic, phase: "protocol" as const, code: "response-too-large", responseBytes: bounded.bytes }
+        : responseFingerprint(bounded.text, response.headers.get("content-type"), response.status);
+      if (response.status >= 300 && response.status < 400) {
+        return { status: "ambiguous", correlationId, diagnostic: { ...diagnostic, phase: "protocol", code: "redirect-rejected" } };
+      }
       if (response.status === 429) {
         return {
           status: "safe-retry",
           errorCode: "rate-limited",
           retryAfterMs: retryAfterMs(response.headers.get("retry-after")),
+          diagnostic,
         };
       }
-      if (response.status >= 500) return { status: "ambiguous", correlationId };
+      if (response.status >= 500) return { status: "ambiguous", correlationId, diagnostic };
       if (!response.ok) {
-        return { status: "denied", errorCode: `foxit-http-${response.status}` };
+        return { status: "denied", errorCode: `foxit-http-${response.status}`, diagnostic };
       }
-
-      const body = (await response.json()) as FoxitFolderResponse;
-      const folderId = body.folder?.folderId ?? body.folderId;
-      return folderId !== undefined && String(folderId)
+      if (bounded.truncated) {
+        return { status: "ambiguous", correlationId, diagnostic };
+      }
+      const raw = bounded.text;
+      let body: FoxitFolderResponse;
+      try {
+        body = JSON.parse(raw) as FoxitFolderResponse;
+      } catch {
+        return { status: "ambiguous", correlationId, diagnostic: { ...diagnostic, phase: "parse", code: "invalid-json" } };
+      }
+      const folderId = providerEnvelopeId(body.folder?.folderId ?? body.folderId);
+      return folderId
         ? {
             status: "sent",
-            providerEnvelopeId: String(folderId),
+            providerEnvelopeId: folderId,
             correlationId,
           }
-        : { status: "ambiguous", correlationId };
-    } catch {
-      return { status: "ambiguous" };
+        : { status: "ambiguous", correlationId, diagnostic: { ...diagnostic, phase: "protocol", code: "missing-folder-id", responseKeys: safeKeys(body) } };
+    } catch (error) {
+      return { status: "ambiguous", diagnostic: { phase: "request", code: error instanceof DOMException && error.name === "AbortError" ? "timeout" : "network-error" } };
     } finally {
       clearTimeout(timer);
     }
@@ -86,9 +113,10 @@ export class FoxitESignClient implements FoxitESignAdapter {
     const body = (await this.getJson(
       this.pathFor(this.config.correlationPath, idempotencyKey, "idempotencyKey"),
     )) as FoxitFolderResponse;
-    const folderId = body.folder?.folderId ?? body.folderId;
-    return folderId !== undefined && String(folderId)
-      ? { providerEnvelopeId: String(folderId) }
+    const folderId = providerEnvelopeId(body.folder?.folderId ?? body.folderId);
+    const matchedKey = body.folder?.custom_field1 ?? body.folder?.customField1 ?? body.custom_field1 ?? body.customField1;
+    return folderId && matchedKey === idempotencyKey
+      ? { providerEnvelopeId: folderId }
       : null;
   }
 
@@ -108,15 +136,17 @@ export class FoxitESignClient implements FoxitESignAdapter {
       ),
       {
         headers: this.authHeaders(),
+        redirect: "manual",
         signal: AbortSignal.timeout(this.config.timeoutMs ?? 15_000),
       },
     );
+    if (response.status >= 300 && response.status < 400) throw new Error("Foxit redirect rejected");
     if (!response.ok) throw new Error("Executed document retrieval failed");
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    if (!bytes.length || bytes.length > 10 * 1024 * 1024) {
+    const bounded = await readBoundedBytes(response, 10 * 1024 * 1024);
+    if (!bounded.bytes.length || bounded.truncated) {
       throw new Error("Executed document size is invalid");
     }
-    return bytes;
+    return bounded.bytes;
   }
 
   private authHeaders(): Record<string, string> {
@@ -134,21 +164,78 @@ export class FoxitESignClient implements FoxitESignAdapter {
     if (
       !template ||
       !template.startsWith("/") ||
+      template.startsWith("//") ||
+      template.includes("\\") ||
       !template.includes(`{${placeholder}}`)
     ) {
       throw new Error("Foxit eSign retrieval path is not configured");
     }
-    return template.replace(`{${placeholder}}`, encodeURIComponent(value));
+    const path = template.replace(`{${placeholder}}`, encodeURIComponent(value));
+    const url = new URL(path, this.config.baseUrl);
+    if (url.origin !== new URL(this.config.baseUrl).origin) throw new Error("Foxit path changed provider origin");
+    return path;
   }
 
   private async getJson(path: string): Promise<Record<string, unknown>> {
     const response = await this.fetcher(new URL(path, this.config.baseUrl), {
       headers: this.authHeaders(),
+      redirect: "manual",
       signal: AbortSignal.timeout(this.config.timeoutMs ?? 15_000),
     });
+    if (response.status >= 300 && response.status < 400) throw new Error("Foxit redirect rejected");
     if (!response.ok) throw new Error("Foxit eSign retrieval failed");
-    return (await response.json()) as Record<string, unknown>;
+    const bounded = await readBoundedText(response, 256 * 1024);
+    if (bounded.truncated) throw new Error("Foxit eSign response is too large");
+    const value: unknown = JSON.parse(bounded.text);
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Foxit eSign response is invalid");
+    return value as Record<string, unknown>;
   }
+}
+
+function responseFingerprint(raw: string, contentType: string | null, httpStatus: number) {
+  return { phase: "response" as const, code: `http-${httpStatus}`, httpStatus, contentType: safeContentType(contentType), responseBytes: Buffer.byteLength(raw), responseSha256: createHash("sha256").update(raw).digest("hex") };
+}
+
+async function readBoundedText(response: Response, limit: number): Promise<{ text: string; bytes: number; truncated: boolean }> {
+  const bounded = await readBoundedBytes(response, limit);
+  return { text: new TextDecoder().decode(bounded.bytes), bytes: bounded.byteCount, truncated: bounded.truncated };
+}
+
+async function readBoundedBytes(response: Response, limit: number): Promise<{ bytes: Uint8Array; byteCount: number; truncated: boolean }> {
+  if (!response.body) return { bytes: new Uint8Array(), byteCount: 0, truncated: false };
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.byteLength;
+    if (bytes > limit) {
+      await reader.cancel();
+      return { bytes: new Uint8Array(), byteCount: bytes, truncated: true };
+    }
+    chunks.push(value);
+  }
+  const combined = new Uint8Array(bytes);
+  let offset = 0;
+  for (const chunk of chunks) { combined.set(chunk, offset); offset += chunk.byteLength; }
+  return { bytes: combined, byteCount: bytes, truncated: false };
+}
+
+function safeContentType(value: string | null): string | undefined {
+  return value?.split(";", 1)[0]?.trim().toLowerCase().slice(0, 64) || undefined;
+}
+
+function safeKeys(value: unknown): string[] | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const allowed = new Set(["folder", "folderId", "result", "error", "errorCode", "message"]);
+  return Object.keys(value).filter((key) => allowed.has(key)).sort();
+}
+
+function providerEnvelopeId(value: unknown): string | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  const normalized = String(value);
+  return /^[A-Za-z0-9._:-]{1,128}$/.test(normalized) ? normalized : undefined;
 }
 
 export function foxitESignConfigFromEnv(): Config {
@@ -218,7 +305,9 @@ function splitName(name: string): { firstName: string; lastName: string } {
 function retryAfterMs(value: string | null): number | undefined {
   if (!value) return undefined;
   const seconds = Number(value);
-  return Number.isFinite(seconds) && seconds >= 0 ? seconds * 1_000 : undefined;
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1_000;
+  const date = Date.parse(value);
+  return Number.isFinite(date) ? Math.max(0, date - Date.now()) : undefined;
 }
 
 function required(name: string) {
@@ -234,6 +323,9 @@ function assertConfig(config: Config) {
   }
   if (!config.envelopePath.startsWith("/")) {
     throw new Error("Foxit paths must be absolute paths");
+  }
+  for (const path of [config.envelopePath, config.detailsPath, config.activityPath, config.executedDocumentPath, config.correlationPath]) {
+    if (path && (!path.startsWith("/") || path.startsWith("//") || path.includes("\\"))) throw new Error("Foxit paths must stay on the provider origin");
   }
   if (!config.clientId || !config.clientSecret) {
     throw new Error("Foxit eSign credentials are required");

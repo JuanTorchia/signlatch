@@ -7,7 +7,8 @@ export function ApprovalPanel(props: { workflowId: string; reviewVersion: number
   const router = useRouter();
   const [state, setState] = useState(props.state);
   const [confirmed, setConfirmed] = useState(false);
-  const [message, setMessage] = useState(props.approvalIsFresh ? "Approval recorded. No email has been sent." : "Review the PDF and recipient before confirming.");
+  const terminalAttempt = ["dispatching", "sent", "reconcile", "failed"].includes(props.state);
+  const [message, setMessage] = useState(terminalAttempt ? "This exact approval was consumed by the recorded delivery attempt." : props.approvalIsFresh ? "Approval recorded. No email has been sent." : "Review the PDF and recipient before confirming.");
   async function approve() {
     setState("confirming");
     const response = await fetch(`/api/workflows/${props.workflowId}/approve`, { method: "POST", headers: { "content-type": "application/json", "x-signlatch-csrf": props.csrf }, body: JSON.stringify({ reviewVersion: props.reviewVersion, reviewDigest: props.reviewDigest }) });
@@ -23,7 +24,7 @@ export function ApprovalPanel(props: { workflowId: string; reviewVersion: number
     <div className="action-content"><p className="step-label">Human decision</p><h2 id="approval-title">Approve this exact version</h2>
     <p role="status" aria-live="polite" className="action-status">{message}</p>
     {props.materialDiff.length > 0 && <details open><summary>Material changes require reapproval</summary><pre>{JSON.stringify(props.materialDiff, null, 2)}</pre></details>}
-    {props.approvalIsFresh ? <p className="success-note">✓ Approved until {props.approvalExpiresAt ? new Date(props.approvalExpiresAt).toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" }) : "the recorded expiry"}.</p> : <>
+    {terminalAttempt ? <p className="success-note">✓ Approval recorded and consumed. It cannot be reused.</p> : props.approvalIsFresh ? <p className="success-note">✓ Approved until {props.approvalExpiresAt ? new Date(props.approvalExpiresAt).toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" }) : "the recorded expiry"}.</p> : <>
       <label className="approval-check"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} disabled={!canReview} /> <span>I checked the PDF, recipient and signature field shown above.</span></label>
       <button className="button button-primary" type="button" onClick={approve} disabled={!canSubmit}>Approve this version</button>
     </>}
