@@ -107,6 +107,10 @@ export default async function Home() {
           <div><dt>SHA-256</dt><dd><code>058c3e619e459d01…6175e79</code></dd><small>Content-addressed evidence</small></div>
         </dl>
         <p className="completion-privacy-note"><strong>Privacy boundary:</strong> the public proof exposes hashes and lifecycle facts—not the recipient, provider identifier, signature, or document contents.</p>
+        <div className="completion-proof-actions">
+          <a className="button" href="https://github.com/JuanTorchia/signlatch/blob/main/evidence/live-completion-2026-08-28.json">View sanitized evidence</a>
+          <a className="button" href="https://github.com/JuanTorchia/signlatch/tree/main/src/server/provider">Inspect completion source</a>
+        </div>
       </section>
 
       <section id="workflow" className="workflow shell">

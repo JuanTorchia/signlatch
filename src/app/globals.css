@@ -132,6 +132,8 @@ h1 { max-width:720px; margin:0; font-size:clamp(52px,5.8vw,76px); line-height:.9
 .completion-proof-grid small { align-self:end; color:#aebdb7; line-height:1.45; }
 .completion-privacy-note { margin:20px 0 0; color:#b9c7c2; font-size:13px; line-height:1.55; }
 .completion-privacy-note strong { color:white; }
+.completion-proof-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+.completion-proof-actions .button { border:1px solid #657771; color:white; }
 .section-heading { display:grid; grid-template-columns:.7fr 1.3fr; gap:40px; align-items:start; }
 h2 { max-width:820px; margin:0; font-size:clamp(38px,5vw,64px); line-height:1; letter-spacing:-.05em; }
 .workflow-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:64px; }
