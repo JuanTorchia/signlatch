@@ -1,0 +1,13 @@
+{
+  "schema": "signlatch.completion-evidence.v1",
+  "capturedAt": "2026-08-28T17:05:20.029Z",
+  "status": "live-demonstrated",
+  "claim": "Authenticated Foxit eSign completion with independently hashed executed bytes",
+  "providerEnvelopeIdHash": "4c6bc977645ab7e91dce84b24f6e3a42673380c9a17a10982dfeba09948f3e91",
+  "executedArtifactSha256": "058c3e619e459d016ac779ba07bab0dca4891e70a49c4c0365e00fc526175e79",
+  "executedArtifactSize": 60071,
+  "executedArtifactVerifiedAt": "2026-08-28T17:05:02.505Z",
+  "timelineEventCount": 8,
+  "timelineDigest": "eda5cab73d59996c198061ac226fd4bea48dd328fcfbc4cd3d7b2cb7c1de6087",
+  "evidenceSha256": "1f8a25f0c42d475059675fbdbded222461ced3d31a60c40163c5538fd9ce8a5e"
+}

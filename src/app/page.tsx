@@ -95,6 +95,20 @@ export default async function Home() {
       <PreparationDemo authenticated={Boolean(session)} authenticationAvailable={authenticationAvailable} csrfToken={csrfToken} />
       {!session && <FixtureApprovalDemo />}
 
+      <section id="live-proof" className="live-completion shell" aria-labelledby="live-proof-title">
+        <div className="section-heading">
+          <div><p className="eyebrow">Authenticated Foxit eSign proof</p><span className="live-proof">Live demonstrated</span></div>
+          <div><h2 id="live-proof-title">One envelope. Human-signed. Independently verified.</h2><p className="demo-intro">Foxit reported the real envelope as executed. SignLatch then imported eight authenticated lifecycle events, downloaded the executed PDF, validated its structure, and stored it by content hash before marking the workflow complete.</p></div>
+        </div>
+        <dl className="completion-proof-grid">
+          <div><dt>Provider lifecycle</dt><dd>Executed</dd><small>Authenticated activity history</small></div>
+          <div><dt>Timeline events</dt><dd>8</dd><small>Sanitized and digest-bound</small></div>
+          <div><dt>Executed PDF</dt><dd>60,071 bytes</dd><small>Validated before completion</small></div>
+          <div><dt>SHA-256</dt><dd><code>058c3e619e459d01…6175e79</code></dd><small>Content-addressed evidence</small></div>
+        </dl>
+        <p className="completion-privacy-note"><strong>Privacy boundary:</strong> the public proof exposes hashes and lifecycle facts—not the recipient, provider identifier, signature, or document contents.</p>
+      </section>
+
       <section id="workflow" className="workflow shell">
         <div className="section-heading">
           <p className="eyebrow">Authority event log</p>

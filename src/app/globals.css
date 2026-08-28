@@ -121,6 +121,17 @@ h1 { max-width:720px; margin:0; font-size:clamp(52px,5.8vw,76px); line-height:.9
 .latched-button { width:100%; background:#2d4d43; color:#b9c9c3; cursor:not-allowed; }
 .latch-reason { margin:10px 0 0; color:#ffb7a5; font-size:11px; text-align:center; }
 .workflow { padding:84px 0; border-top:1px solid var(--line); }
+.live-completion { margin-bottom:84px; padding:58px; border-radius:4px; background:var(--ink); color:#f8f2e9; }
+.live-completion .eyebrow { color:#ffb7a5; }
+.live-completion .demo-intro { color:#c5d0cb; }
+.completion-proof-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; margin:44px 0 0; overflow:hidden; border:1px solid #52615c; border-radius:12px; background:#52615c; }
+.completion-proof-grid>div { display:grid; gap:8px; min-height:150px; padding:22px; background:#20342d; }
+.completion-proof-grid dt { color:#aebdb7; font:700 11px var(--font-geist-mono),monospace; text-transform:uppercase; }
+.completion-proof-grid dd { margin:12px 0 0; color:white; font-size:23px; font-weight:800; overflow-wrap:anywhere; }
+.completion-proof-grid dd code { color:#ffb7a5; font-size:13px; }
+.completion-proof-grid small { align-self:end; color:#aebdb7; line-height:1.45; }
+.completion-privacy-note { margin:20px 0 0; color:#b9c7c2; font-size:13px; line-height:1.55; }
+.completion-privacy-note strong { color:white; }
 .section-heading { display:grid; grid-template-columns:.7fr 1.3fr; gap:40px; align-items:start; }
 h2 { max-width:820px; margin:0; font-size:clamp(38px,5vw,64px); line-height:1; letter-spacing:-.05em; }
 .workflow-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:64px; }
@@ -223,6 +234,8 @@ h2 { max-width:820px; margin:0; font-size:clamp(38px,5vw,64px); line-height:1; l
 @media(max-width:860px){.hero-grid,.demo-grid{grid-template-columns:1fr;gap:46px;padding-top:52px}.review-receipt{box-shadow:8px 8px 0 var(--green)}.section-heading{grid-template-columns:1fr;gap:12px}.architecture{padding:42px 28px}.mutation-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}.boundary-table>div{grid-template-columns:130px 1fr}.boundary-table small{grid-column:2}}
 @media(max-width:540px){.shell{width:min(100% - 26px,1180px)}.hero{min-height:auto}.nav-links{gap:12px}.hero-grid{padding:38px 0 64px}h1{font-size:45px}.lede{font-size:18px}.hero-actions,.hero-actions .button{width:100%}.demo,.workflow{padding:62px 0}.receipt-facts div,.fixture-facts div{grid-template-columns:1fr;gap:5px}.receipt-rule{flex-direction:column}.prompt-panel{min-height:0;padding:18px}.prompt-panel h3{font-size:21px}.fixture-facts dt,.fixture-facts dd,.label,.fixture-boundary{font-size:14px}.public-boundary-note{grid-template-columns:auto 1fr}.public-boundary-note strong{grid-column:2}.proof-facts div{grid-template-columns:1fr}.review-diff{grid-template-columns:1fr}.review-diff p+p{border-left:0;border-top:1px solid var(--line)}.diff-heading,.diff-result{flex-direction:column}.authority-log li{grid-template-columns:82px 1fr;gap:10px}.authority-log strong{grid-column:2;text-align:left}.boundary-table>div{grid-template-columns:1fr;gap:7px}.boundary-table small{grid-column:auto}.footer{flex-direction:column}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button:hover{transform:none}}
+@media(max-width:860px){.live-completion{padding:42px 28px}.completion-proof-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.live-completion{padding:34px 20px}.completion-proof-grid{grid-template-columns:1fr}}
 @media(max-width:540px){.nav{align-items:flex-start;gap:14px}.nav-links{flex-wrap:wrap;justify-content:flex-end}.fixture-state{grid-template-columns:1fr}.mutation-matrix{min-width:0;padding:18px}.mutation-buttons{grid-template-columns:1fr}.fixture-actions,.fixture-actions .button{width:100%}}
 @media(max-width:860px){.agreement-row{grid-template-columns:1fr auto}.agreement-row time{display:none}.agreement-row b{grid-column:1/-1}.review-header{flex-direction:column}.progress-steps{grid-template-columns:1fr}.review-columns{grid-template-columns:1fr}.document-card iframe{height:520px}}
 @media(max-width:860px){.workspace-help{grid-template-columns:1fr;gap:24px}.workspace-help ol{grid-template-columns:1fr}}
