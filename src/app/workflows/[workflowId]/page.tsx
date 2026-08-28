@@ -44,7 +44,7 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
     <main className="shell workflow-review">
       <header className="review-header">
         <div><p className="eyebrow">Private signing workspace</p><h1>Review supplier agreement</h1></div>
-        <span className={`status ${approvalIsFresh || workflowState === "sent" ? "status-approved" : "status-blocked"}`}>
+        <span className={`status ${approvalIsFresh || ["sent", "completed"].includes(workflowState) ? "status-approved" : "status-blocked"}`}>
           {workflowStatusLabel(workflowState, approvalIsFresh)}
         </span>
       </header>
@@ -58,7 +58,7 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
       <ol className="progress-steps" aria-label="Signing progress">
         <li data-complete="true"><span>1</span><div><strong>PDF prepared</strong><small>Foxit generated and verified the document.</small></div></li>
         <li data-complete={approvalWasRecorded(workflowState, approvalIsFresh)}><span>2</span><div><strong>{approvalStep(workflowState, approvalIsFresh, approvalExpiresAt).title}</strong><small>{approvalStep(workflowState, approvalIsFresh, approvalExpiresAt).detail}</small></div></li>
-        <li data-complete={workflowState === "sent"}><span>3</span><div><strong>{deliveryStep(workflowState).title}</strong><small>{deliveryStep(workflowState).detail}</small></div></li>
+        <li data-complete={["sent", "completed"].includes(workflowState)}><span>3</span><div><strong>{deliveryStep(workflowState).title}</strong><small>{deliveryStep(workflowState).detail}</small></div></li>
       </ol>
       <div className="review-columns">
         <section className="review-card document-card" aria-labelledby="artifact-title">
@@ -106,6 +106,7 @@ export default async function WorkflowReviewPage({ params }: PageProps<"/workflo
 }
 
 function deliveryHeading(state: string): string {
+  if (state === "completed") return "Signed and completed in Foxit";
   if (state === "sent") return "Foxit accepted the envelope";
   if (state === "reconcile") return "Delivery is unconfirmed";
   if (state === "dispatching") return "Delivery is in progress";
@@ -114,6 +115,7 @@ function deliveryHeading(state: string): string {
 }
 
 function deliveryCopy(state: string): string {
+  if (state === "completed") return "Foxit reports that the signer completed the agreement. SignLatch verified and recorded the provider lifecycle.";
   if (state === "sent") return "Foxit returned an envelope identifier. The signing invitation should be verified in the recipient inbox and provider timeline.";
   if (state === "reconcile") return "Foxit did not provide enough evidence to prove whether an invitation was sent. Do not resend while this attempt is investigated.";
   if (state === "dispatching") return "One authorized attempt is underway. Starting another attempt is blocked.";
@@ -122,6 +124,7 @@ function deliveryCopy(state: string): string {
 }
 
 function deliveryStep(state: string): { title: string; detail: string } {
+  if (state === "completed") return { title: "Signing completed", detail: "Foxit reports the envelope as executed." };
   if (state === "sent") return { title: "Envelope accepted", detail: "Foxit returned an envelope identifier." };
   if (state === "reconcile") return { title: "Verification required", detail: "Delivery is unknown; duplicate sends are blocked." };
   if (state === "dispatching") return { title: "Sending", detail: "One provider attempt is in progress." };
@@ -130,6 +133,7 @@ function deliveryStep(state: string): { title: string; detail: string } {
 }
 
 function recipientDeliveryCopy(state: string): string {
+  if (state === "completed") return "Foxit reports that this recipient signed the agreement.";
   if (state === "sent") return "Foxit accepted an invitation for this address.";
   if (state === "reconcile") return "Whether Foxit emailed this address is currently unknown.";
   if (state === "dispatching") return "A single delivery attempt is in progress.";
@@ -137,6 +141,7 @@ function recipientDeliveryCopy(state: string): string {
 }
 
 function workflowStatusLabel(state: string, approvalIsFresh: boolean): string {
+  if (state === "completed") return "Signed and completed";
   if (state === "sent") return "Sent to Foxit";
   if (state === "reconcile") return "Delivery unconfirmed";
   if (state === "dispatching") return "Delivery in progress";
@@ -145,11 +150,11 @@ function workflowStatusLabel(state: string, approvalIsFresh: boolean): string {
 }
 
 function approvalWasRecorded(state: string, approvalIsFresh: boolean): boolean {
-  return approvalIsFresh || ["dispatching", "sent", "reconcile", "failed"].includes(state);
+  return approvalIsFresh || ["dispatching", "sent", "completed", "reconcile", "failed"].includes(state);
 }
 
 function approvalStep(state: string, approvalIsFresh: boolean, expiresAt: Date | null): { title: string; detail: string } {
-  if (["dispatching", "sent", "reconcile", "failed"].includes(state)) return { title: "Approval consumed", detail: "The exact approval was used by the recorded delivery attempt." };
+  if (["dispatching", "sent", "completed", "reconcile", "failed"].includes(state)) return { title: "Approval consumed", detail: "The exact approval was used by the recorded delivery attempt." };
   if (approvalIsFresh) return { title: "Approval recorded", detail: expiresAt ? `Valid until ${expiresAt.toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" })}.` : "The exact snapshot is approved." };
   return { title: "Approval required", detail: "Review and approve the exact snapshot." };
 }
