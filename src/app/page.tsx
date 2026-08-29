@@ -51,54 +51,69 @@ export default async function Home() {
             <span>SignLatch</span>
           </a>
           <div className="nav-links">
-            <a className="nav-link" href={session ? "#agreements" : "#demo"}>{session ? "My agreements" : "Safe showcase"}</a>
-            <a className="nav-link" href="#architecture">Architecture</a>
+            <a className="nav-link" href={session ? "#agreements" : "#demo"}>{session ? "My agreements" : "Try the demo"}</a>
+            <a className="nav-link" href="#how-it-works">How it works</a>
+            <a className="nav-link nav-link-desktop" href="https://github.com/JuanTorchia/signlatch">GitHub</a>
             {session ? <form action="/api/auth/signout" method="post"><button className="nav-link" type="submit">Sign out</button></form> : authenticationAvailable ? <a className="nav-link" href="/api/auth/login">Sign in</a> : <span className="nav-link" aria-label="Private access unavailable">Fixture mode</span>}
           </div>
         </nav>
 
         <div id="top" className="hero-grid">
           <div className="hero-copy">
-            <p className="eyebrow">Document authority workbench</p>
-            <h1>Your agent can prepare it. Only you can release it.</h1>
+            <p className="eyebrow">A safety layer for document automation</p>
+            <h1>Stop the wrong document before it reaches a signer.</h1>
             <p className="lede">
-              Inspect the exact document state an agent prepared. If any material fact
-              changes, approval is invalidated before Foxit eSign can act.
+              SignLatch sits between an AI agent and Foxit eSign. A person verifies
+              the PDF, recipient and signature fields—then releases only that exact version.
             </p>
+            <p className="hero-audience">For legal operations, procurement and document teams</p>
             <div className="hero-actions">
-              <a className="button button-primary" href={session ? "#agreements" : "#fixture-approval-title"}>{session ? "Open my agreements" : "Inspect the exact approval"}</a>
-              <a className="button button-secondary" href="https://github.com/JuanTorchia/signlatch">
-                Follow the build
-              </a>
+              <a className="button button-primary" href={session ? "#agreements" : "#demo"}>{session ? "Open my agreements" : "Try the safe approval simulation"}</a>
+              <a className="button button-secondary" href="#how-it-works">See how it works</a>
             </div>
           </div>
 
-          <div className="review-receipt" aria-label="Sanitized exact review snapshot">
-            <div className="card-bar">
-              <span>Supplier agreement · review 07</span>
-              <span className="status status-blocked">Provider locked</span>
+          <article className="release-checkpoint" aria-labelledby="checkpoint-title">
+            <div className="checkpoint-header">
+              <div><span className="checkpoint-kicker">Release checkpoint</span><h2 id="checkpoint-title">Needs your review</h2></div>
+              <span className="checkpoint-lock" aria-label="Sending is locked">Locked</span>
             </div>
-            <dl className="receipt-facts">
-              <div><dt>Artifact</dt><dd><code>{PUBLIC_SHOWCASE.artifactSha256.slice(0, 16)}…{PUBLIC_SHOWCASE.artifactSha256.slice(-8)}</code></dd></div>
-              <div><dt>Recipient</dt><dd>{PUBLIC_SHOWCASE.recipient}</dd></div>
-              <div><dt>Fields</dt><dd>2 signature fields</dd></div>
-              <div><dt>Findings</dt><dd>1 authority finding</dd></div>
-              <div><dt>Foxit source</dt><dd><code>pdf_from_text</code></dd></div>
-              <div><dt>Provider</dt><dd><strong>LOCKED</strong></dd></div>
+            <div className="checkpoint-document">
+              <span className="document-icon" aria-hidden="true">PDF</span>
+              <div><strong>Supplier Agreement</strong><span>Example Components · prepared by agent</span></div>
+            </div>
+            <dl className="checkpoint-facts">
+              <div><dt>Send to</dt><dd>{PUBLIC_SHOWCASE.recipient}</dd></div>
+              <div><dt>Signature fields</dt><dd>2 fields on page 1</dd></div>
+              <div><dt>Terms</dt><dd>Net 30 payment terms</dd></div>
             </dl>
-            <div className="receipt-rule"><span>Exact review digest</span><code>approval-v2 / bound</code></div>
-            <a className="receipt-action" href="#fixture-approval-title">Open review ceremony <span aria-hidden="true">↓</span></a>
-          </div>
+            <div className="checkpoint-warning"><span aria-hidden="true">!</span><p><strong>The agent cannot send this.</strong><br />A person must approve the exact document and recipient first.</p></div>
+            <a className="checkpoint-action" href="#demo">Review before sending <span aria-hidden="true">→</span></a>
+            <p className="checkpoint-footnote">If any bound material fact changes, SignLatch cancels the approval.</p>
+          </article>
         </div>
+      </section>
+
+      <section id="how-it-works" className="value-strip shell" aria-label="How SignLatch changes document automation">
+        <div><span>01</span><strong>Agent prepares</strong><small>Draft the PDF and place fields with Foxit MCP.</small></div>
+        <i aria-hidden="true">→</i>
+        <div className="value-strip-human"><span>02</span><strong>Human verifies</strong><small>Check the exact file, recipient, terms and fields.</small></div>
+        <i aria-hidden="true">→</i>
+        <div><span>03</span><strong>Foxit sends</strong><small>Release only the version that was approved.</small></div>
       </section>
 
       <PreparationDemo authenticated={Boolean(session)} authenticationAvailable={authenticationAvailable} csrfToken={csrfToken} />
       {!session && <FixtureApprovalDemo />}
 
+      <aside className="evidence-separation shell" aria-label="Public demo and live proof boundary">
+        <strong>Two separate evidence tracks</strong>
+        <p>The interactive demo above is an effect-free public fixture. The proof below comes from a separate, previously authorized Foxit sandbox envelope; using the fixture cannot send email or consume credits.</p>
+      </aside>
+
       <section id="live-proof" className="live-completion shell" aria-labelledby="live-proof-title">
         <div className="section-heading">
           <div><p className="eyebrow">Authenticated Foxit eSign proof</p><span className="live-proof">Live demonstrated</span></div>
-          <div><h2 id="live-proof-title">One envelope. Human-signed. Independently verified.</h2><p className="demo-intro">Foxit reported the real envelope as executed. SignLatch then imported eight authenticated lifecycle events, downloaded the executed PDF, validated its structure, and stored it by content hash before marking the workflow complete.</p></div>
+          <div><h2 id="live-proof-title">One envelope. Human-signed. Verified from Foxit activity.</h2><p className="demo-intro">SignLatch retrieved the real envelope state from Foxit&apos;s authenticated activity API, imported eight lifecycle events, downloaded the executed PDF, validated its structure, and independently hashed the retrieved bytes before marking the workflow complete.</p></div>
         </div>
         <dl className="completion-proof-grid">
           <div><dt>Provider lifecycle</dt><dd>Executed</dd><small>Authenticated activity history</small></div>
@@ -106,16 +121,16 @@ export default async function Home() {
           <div><dt>Executed PDF</dt><dd>60,071 bytes</dd><small>Validated before completion</small></div>
           <div><dt>SHA-256</dt><dd><code>058c3e619e459d01…6175e79</code></dd><small>Content-addressed evidence</small></div>
         </dl>
-        <p className="completion-privacy-note"><strong>Privacy boundary:</strong> the public proof exposes hashes and lifecycle facts—not the recipient, provider identifier, signature, or document contents.</p>
+        <p className="completion-privacy-note"><strong>Privacy boundary:</strong> the public proof exposes the executed-file hash and aggregate lifecycle facts—not recipient data, provider or event identifiers, signatures, or document contents.</p>
         <div className="completion-proof-actions">
-          <a className="button" href="https://github.com/JuanTorchia/signlatch/blob/main/evidence/live-completion-2026-08-28.json">View sanitized evidence</a>
+          <a className="button" href="https://github.com/JuanTorchia/signlatch/blob/main/evidence/live-completion-public-2026-08-29.json">View sanitized evidence</a>
           <a className="button" href="https://github.com/JuanTorchia/signlatch/tree/main/src/server/provider">Inspect completion source</a>
         </div>
       </section>
 
       <section id="workflow" className="workflow shell">
         <div className="section-heading">
-          <p className="eyebrow">Authority event log</p>
+          <p className="eyebrow">Technical event log</p>
           <h2>Every transition leaves a reason.</h2>
         </div>
         <ol className="authority-log">

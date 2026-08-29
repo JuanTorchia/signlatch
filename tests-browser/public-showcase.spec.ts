@@ -13,6 +13,10 @@ test("anonymous showcase is sanitized and has no effect controls", async ({ page
   await page.goto("/");
   await expect(page.getByText("Sanitized real fixture")).toBeVisible();
   await expect(page.getByText("Public showcase is read-only")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue to human approval" })).toHaveAttribute("href", "#fixture-approval-title");
+  await expect(page.getByRole("link", { name: "Try the safe approval simulation" })).toHaveAttribute("href", "#demo");
+  await expect(page.getByText("Two separate evidence tracks")).toBeVisible();
+  await expect(page.getByText("Independently verified", { exact: false })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Prepare PDF/i })).toHaveCount(0);
   await expect(page.getByText("Private workspace access is not enabled in this deployment.")).toBeVisible();
   await expect(page.getByRole("link", { name: /Sign in/i })).toHaveCount(0);

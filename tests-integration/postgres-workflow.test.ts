@@ -31,6 +31,11 @@ before(async () => {
     "utf8",
   );
   await sql.unsafe(fencingMigration);
+  const tenantIntegrityMigration = readFileSync(
+    new URL("../db/migrations/004_tenant_integrity.sql", import.meta.url),
+    "utf8",
+  );
+  await sql.unsafe(tenantIntegrityMigration);
 });
 
 beforeEach(async () => {
@@ -57,6 +62,40 @@ test("approval claim is atomic and creates one outbox record", async () => {
   assert.deepEqual(Array.from(outbox), [
     { approval_id: envelope.approvalId, idempotency_key: `signlatch:${envelope.approvalId}` },
   ]);
+});
+
+test("database constraints reject cross-tenant outbox and audit rows", async () => {
+  const envelope = approvalFixture();
+  await store.createReview(envelope);
+
+  await assert.rejects(
+    () => sql`
+      insert into dispatch_outbox (
+        outbox_id, workflow_id, tenant_id, approval_id, idempotency_key, payload
+      ) values (
+        '00000000-0000-4000-8000-000000000041', ${envelope.workflowId},
+        'another-tenant', 'cross-tenant-approval', 'signlatch:cross-tenant-approval',
+        '{}'::jsonb
+      )
+    `,
+    (error: unknown) =>
+      typeof error === "object" && error !== null && "code" in error && error.code === "23503",
+  );
+
+  await assert.rejects(
+    () => sql`
+      insert into audit_events (
+        event_id, workflow_id, tenant_id, event_type, actor_id, occurred_at,
+        event_data, previous_hash, event_hash
+      ) values (
+        '00000000-0000-4000-8000-000000000042', ${envelope.workflowId},
+        'another-tenant', 'cross-tenant-test', 'test', now(), '{}'::jsonb,
+        ${"0".repeat(64)}, ${"1".repeat(64)}
+      )
+    `,
+    (error: unknown) =>
+      typeof error === "object" && error !== null && "code" in error && error.code === "23503",
+  );
 });
 
 test("an ambiguous provider result enters reconciliation and preserves idempotency", async () => {

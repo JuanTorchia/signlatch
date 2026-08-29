@@ -1,0 +1,12 @@
+{
+  "schema": "signlatch.completion-evidence.public.v2",
+  "capturedAt": "2026-08-29T00:00:00.000Z",
+  "sourceEvidence": "live-completion-2026-08-28.json",
+  "status": "live-demonstrated",
+  "claim": "Foxit eSign completion verified from authenticated provider activity, with retrieved executed bytes independently hashed by SignLatch",
+  "executedArtifactSha256": "058c3e619e459d01cbd5b1e83ee3022f22f29e0981caab1404824c2066175e79",
+  "executedArtifactSize": 60071,
+  "executedArtifactVerifiedAt": "2026-08-28T15:28:25.205Z",
+  "timelineEventCount": 8,
+  "privacy": "Raw workflow, provider, event, recipient, signer, signature, and document-content data are omitted. The source evidence remains preserved as historical evidence."
+}

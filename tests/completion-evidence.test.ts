@@ -28,11 +28,12 @@ function sqlFixture(completed = true): Sql {
   }) as unknown as Sql;
 }
 
-test("completion evidence is derived from correlated database state and hashes provider identifiers", async () => {
+test("completion evidence is derived from correlated database state without publishing provider identifiers", async () => {
   const evidence = await buildCompletionEvidence(sqlFixture(), workflowId, new Date("2026-08-26T13:05:00Z"));
   assert.equal(evidence.executedArtifactSha256, "a".repeat(64));
   assert.equal(evidence.timelineEventCount, 2);
-  assert.match(evidence.providerEnvelopeIdHash, /^[a-f0-9]{64}$/);
+  assert.equal("providerEnvelopeIdHash" in evidence, false);
+  assert.equal("workflowId" in evidence, false);
   assert.match(evidence.timelineDigest, /^[a-f0-9]{64}$/);
   assert.match(evidence.evidenceSha256, /^[a-f0-9]{64}$/);
   assert.equal(JSON.stringify(evidence).includes("private-envelope-id"), false);

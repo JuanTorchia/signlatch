@@ -39,18 +39,15 @@ export async function buildCompletionEvidence(sql: Sql, workflowId: string, capt
     throw new Error("Verified completion event is missing");
   }
   const timeline = events.map((event) => ({
-    eventIdHash: digest(event.event_id),
     type: event.event_type,
     occurredAt: event.occurred_at.toISOString(),
   }));
-  const timelineDigest = digest(`signlatch:provider-timeline:v1\n${JSON.stringify(timeline)}`);
+  const timelineDigest = digest(`signlatch:provider-timeline:v2\n${JSON.stringify(timeline)}`);
   const evidence = {
-    schema: "signlatch.completion-evidence.v1" as const,
+    schema: "signlatch.completion-evidence.v2" as const,
     capturedAt: capturedAt.toISOString(),
     status: "live-demonstrated" as const,
-    claim: "Authenticated Foxit eSign completion with independently hashed executed bytes",
-    workflowId,
-    providerEnvelopeIdHash: digest(completion.provider_envelope_id),
+    claim: "Foxit eSign completion verified from authenticated provider activity, with retrieved executed bytes independently hashed by SignLatch",
     executedArtifactSha256: completion.artifact_sha256,
     executedArtifactSize: Number(completion.actual_size),
     executedArtifactVerifiedAt: completion.verified_at.toISOString(),

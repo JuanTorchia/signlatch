@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const categories = ["artifact", "recipient", "field", "finding", "intent"] as const;
+const mutations = [
+  { key: "recipient", label: "Change recipient email", before: "alex@example.invalid", after: "finance@example.invalid", field: "recipient.email" },
+  { key: "artifact", label: "Replace document version", before: "Supplier Agreement · approved PDF", after: "Supplier Agreement · revised PDF", field: "document.sha256" },
+  { key: "field", label: "Move signature field", before: "Signature · page 1, lower right", after: "Signature · page 2, upper left", field: "signatureField.position" },
+  { key: "finding", label: "Add policy warning", before: "No blocking policy warning", after: "Missing supplier tax form", field: "policy.findings" },
+  { key: "intent", label: "Change payment terms", before: "Payment terms · Net 30", after: "Payment terms · Net 7", field: "agreement.intent" },
+] as const;
+type MutationKey = (typeof mutations)[number]["key"];
 type Status = "review" | "approved" | "invalidated";
 
 const stateCopy = {
@@ -13,19 +20,28 @@ const stateCopy = {
 
 export function FixtureApprovalDemo() {
   const [status, setStatus] = useState<Status>("review");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState<MutationKey | "">("");
   const [reviewed, setReviewed] = useState(false);
+  const mutationRef = useRef<HTMLButtonElement>(null);
+  const resetRef = useRef<HTMLButtonElement>(null);
+  const confirmationRef = useRef<HTMLInputElement>(null);
+  const selectedMutation = mutations.find((item) => item.key === category);
   const message = status === "approved"
     ? "Fixture approval recorded locally. No provider action was unlocked or sent."
     : status === "invalidated"
-      ? `Approval invalidated by ${category} mutation. Restoring values requires reapproval.`
+      ? `Approval invalidated because ${selectedMutation?.label.toLowerCase()}. Restoring the old value still requires a fresh approval.`
       : "Exact fixture is ready for human review.";
-  const changedField = category ? `${category}.${category === "recipient" ? "email" : category === "artifact" ? "sha256" : "value"}` : "recipient.email";
+
+  useEffect(() => {
+    if (status === "approved") mutationRef.current?.focus();
+    if (status === "invalidated") resetRef.current?.focus();
+  }, [status]);
 
   function reset() {
     setCategory("");
     setStatus("review");
     setReviewed(false);
+    requestAnimationFrame(() => confirmationRef.current?.focus());
   }
 
   return (
@@ -39,31 +55,31 @@ export function FixtureApprovalDemo() {
       </div>
       <p className="fixture-message" role="status" aria-live="polite" aria-atomic="true">{message}</p>
       <div className="review-diff" data-state={status} aria-label="Exact mutation evidence">
-        <div className="diff-heading"><span>{status === "invalidated" ? "Exact change" : "Bound snapshot"}</span><code>{status === "invalidated" ? changedField : "approval-v2 / exact fixture"}</code></div>
+        <div className="diff-heading"><span>{status === "invalidated" ? "Exact business change" : "Bound snapshot"}</span><code>{status === "invalidated" ? selectedMutation?.field : "approval-v2 / exact fixture"}</code></div>
         {status === "invalidated" ? <>
-          <p><del>{category === "recipient" ? "alex@example.invalid" : "approved fixture value"}</del></p>
-          <p><ins>{category === "recipient" ? "finance@example.invalid" : "mutated fixture value"}</ins></p>
+          <p><del>{selectedMutation?.before}</del></p>
+          <p><ins>{selectedMutation?.after}</ins></p>
         </> : <p className="diff-placeholder">{status === "approved" ? "The exact snapshot is approved. Choose one material mutation to challenge it." : "Review and approve the exact snapshot before introducing a mutation."}</p>}
         <div className="diff-result"><strong>{status === "invalidated" ? "APPROVAL INVALIDATED" : status === "approved" ? "APPROVAL ACTIVE" : "AWAITING APPROVAL"}</strong><span>Provider: LOCKED</span></div>
       </div>
       <fieldset className="mutation-matrix">
-        <legend>Material mutation matrix</legend>
-        <p>Each category must invalidate the current approval state.</p>
+        <legend>Challenge the approval with a real-world change</legend>
+        <p>Start with the recipient change, or open any other material-change case. Every case must invalidate approval.</p>
         <div className="mutation-buttons">
-        {categories.map((item) => (
-          <button className="button button-secondary" type="button" key={item} disabled={status !== "approved"} onClick={() => { setCategory(item); setStatus("invalidated"); setReviewed(false); }}>
-            Mutate {item}
+        {mutations.map((item, index) => (
+          <button data-mutation={item.key} ref={index === 0 ? mutationRef : undefined} className={`button button-secondary ${index === 0 ? "mutation-primary" : ""}`} type="button" key={item.key} disabled={status !== "approved"} onClick={() => { setCategory(item.key); setStatus("invalidated"); setReviewed(false); }}>
+            {item.label}
           </button>
         ))}
         </div>
       </fieldset>
       <label className="review-confirmation">
-        <input type="checkbox" checked={reviewed} disabled={status !== "review"} onChange={(event) => setReviewed(event.target.checked)} />{" "}
+        <input ref={confirmationRef} type="checkbox" checked={reviewed} disabled={status !== "review"} onChange={(event) => setReviewed(event.target.checked)} />{" "}
         I reviewed the exact fixture snapshot.
       </label>
       <div className="fixture-actions">
         <button className="button button-primary" type="button" disabled={status !== "review" || !reviewed} onClick={() => setStatus("approved")}>Record simulated approval</button>
-        {status !== "review" ? <button className="button button-secondary" type="button" onClick={reset}>Start a fresh fixture review</button> : null}
+        {status !== "review" ? <button ref={resetRef} className="button button-secondary" type="button" onClick={reset}>Start a fresh fixture review</button> : null}
       </div>
       <p className="fixture-boundary"><strong>Fixture boundary:</strong> no SignLatch provider-effect request, signing action, or credit use can originate here. Hosting infrastructure may emit operational telemetry.</p>
     </section>

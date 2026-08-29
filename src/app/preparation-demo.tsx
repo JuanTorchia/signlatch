@@ -75,6 +75,7 @@ export function PreparationDemo({ authenticated = false, authenticationAvailable
               <div><dt>Provenance</dt><dd>{PUBLIC_SHOWCASE.provenance.join(" → ")}</dd></div>
               <div><dt>Authority</dt><dd>{PUBLIC_SHOWCASE.findings.join(" · ")}</dd></div>
             </dl>
+            <a className="button button-primary fixture-next" href="#fixture-approval-title">Continue to human approval</a>
             {authenticationAvailable ? (
               <a className="button button-secondary" href="/api/auth/login">Sign in for the private workspace</a>
             ) : (

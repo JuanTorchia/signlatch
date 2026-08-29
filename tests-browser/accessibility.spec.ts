@@ -23,8 +23,11 @@ test("fixture approval and invalidation are fully keyboard operable with visible
   expect(outline).not.toBe("none");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("status")).toContainText("Fixture approval recorded locally");
-  const mutation = page.getByRole("button", { name: "Mutate artifact" });
-  await mutation.focus();
+  const mutation = page.getByRole("button", { name: "Change recipient email" });
+  await expect(mutation).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toContainText("artifact mutation");
+  await expect(page.getByRole("status")).toContainText("change recipient email");
+  await expect(page.getByRole("button", { name: "Start a fresh fixture review" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(checkbox).toBeFocused();
 });
