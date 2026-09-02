@@ -25,6 +25,7 @@ RUN pnpm build
 FROM base AS runtime
 ENV NODE_ENV=production
 RUN apt-get update \
+    && apt-get upgrade --no-install-recommends -y \
     && apt-get install --no-install-recommends -y ca-certificates curl python3 python3-venv qpdf tini \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=uv-bin /uv /uvx /usr/local/bin/
@@ -35,7 +36,8 @@ RUN cd /opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
       -e 's#https://pypi.tuna.tsinghua.edu.cn/simple#https://pypi.org/simple#g' \
       -e 's#https://pypi.tuna.tsinghua.edu.cn/packages/#https://files.pythonhosted.org/packages/#g' \
       uv.lock \
-    && uv sync --frozen --no-dev
+    && uv lock --upgrade-package authlib --upgrade-package fastmcp \
+    && uv sync --no-dev
 ENV FOXIT_MCP_COMMAND=/usr/local/bin/uv \
     FOXIT_MCP_CWD=/opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
     FOXIT_MCP_MODULE_ROOT=/opt/foxit-pdf-api-mcp-server
@@ -48,7 +50,9 @@ COPY --from=build /app/src ./src
 COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 RUN mkdir -p /var/lib/signlatch/artifacts \
-    && chown -R node:node /var/lib/signlatch
+    && chown -R node:node /var/lib/signlatch \
+    && rm -rf /usr/local/lib/node_modules/npm \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
