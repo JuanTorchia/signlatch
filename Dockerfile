@@ -36,7 +36,7 @@ RUN cd /opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
       -e 's#https://pypi.tuna.tsinghua.edu.cn/simple#https://pypi.org/simple#g' \
       -e 's#https://pypi.tuna.tsinghua.edu.cn/packages/#https://files.pythonhosted.org/packages/#g' \
       uv.lock \
-    && uv lock --upgrade-package authlib --upgrade-package fastmcp --upgrade-package anyio \
+    && uv lock --upgrade-package authlib --upgrade-package fastmcp --upgrade-package anyio --upgrade-package pyjwt \
     && uv sync --no-dev
 ENV FOXIT_MCP_COMMAND=/usr/local/bin/uv \
     FOXIT_MCP_CWD=/opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
