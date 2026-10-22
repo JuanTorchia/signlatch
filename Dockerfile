@@ -2,7 +2,9 @@
 FROM node:22.23.4-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@11.10.0 --activate
+RUN corepack disable pnpm \
+    && npm install --global pnpm@11.28.7 \
+    && pnpm --version
 WORKDIR /app
 
 FROM ghcr.io/astral-sh/uv:0.8.13 AS uv-bin
@@ -39,6 +41,8 @@ RUN cd /opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
       uv.lock \
     && uv lock --upgrade-package authlib --upgrade-package fastmcp --upgrade-package anyio --upgrade-package pyjwt --upgrade-package certifi \
       --upgrade-package cryptography==50.0.0 --upgrade-package jaraco.context==6.1.0 --upgrade-package urllib3==2.8.0 \
+      --upgrade-package pygments==2.20.0 --upgrade-package pydantic-settings==2.14.2 \
+      --upgrade-package python-dotenv==1.2.2 --upgrade-package requests==2.33.0 \
     && uv sync --no-dev
 ENV FOXIT_MCP_COMMAND=/usr/local/bin/uv \
     FOXIT_MCP_CWD=/opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
@@ -53,8 +57,10 @@ COPY --from=build /app/migrations ./migrations
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 RUN mkdir -p /var/lib/signlatch/artifacts \
     && chown -R node:node /var/lib/signlatch \
-    && rm -rf /usr/local/lib/node_modules/npm \
-    && rm -f /usr/local/bin/npm /usr/local/bin/npx
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+        /root/.npm /root/.cache/node/corepack /opt/yarn* \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+        /usr/local/bin/yarn /usr/local/bin/yarnpkg
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
