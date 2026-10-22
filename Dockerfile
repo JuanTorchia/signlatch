@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:20-bookworm-slim AS base
+FROM node:22.23.4-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 RUN corepack enable && corepack prepare pnpm@10.34.5 --activate
@@ -8,7 +8,7 @@ WORKDIR /app
 FROM ghcr.io/astral-sh/uv:0.8.13 AS uv-bin
 
 FROM alpine:3.22 AS foxit-source
-RUN apk add --no-cache git \
+RUN apk upgrade --no-cache && apk add --no-cache git \
     && git clone https://github.com/foxitsoftware/foxit-pdf-api-mcp-server.git /opt/foxit-pdf-api-mcp-server \
     && cd /opt/foxit-pdf-api-mcp-server \
     && git checkout db16f9d0f18b878a07f41621e708dbb78bc13e4c \
@@ -25,6 +25,7 @@ RUN pnpm build
 FROM base AS runtime
 ENV NODE_ENV=production
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get upgrade --no-install-recommends -y \
     && apt-get install --no-install-recommends -y ca-certificates curl python3 python3-venv qpdf tini \
     && rm -rf /var/lib/apt/lists/*
@@ -36,7 +37,7 @@ RUN cd /opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
       -e 's#https://pypi.tuna.tsinghua.edu.cn/simple#https://pypi.org/simple#g' \
       -e 's#https://pypi.tuna.tsinghua.edu.cn/packages/#https://files.pythonhosted.org/packages/#g' \
       uv.lock \
-    && uv lock --upgrade-package authlib --upgrade-package fastmcp --upgrade-package anyio --upgrade-package pyjwt \
+    && uv lock --upgrade-package authlib --upgrade-package fastmcp --upgrade-package anyio --upgrade-package pyjwt --upgrade-package certifi \
     && uv sync --no-dev
 ENV FOXIT_MCP_COMMAND=/usr/local/bin/uv \
     FOXIT_MCP_CWD=/opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
