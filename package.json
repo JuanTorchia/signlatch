@@ -33,11 +33,12 @@
     "check:integration": "pnpm check && pnpm test:integration"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "next": "16.4.2",
     "postgres": "^3.4.9",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "tsx": "^4.23.12"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
@@ -48,8 +49,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
-    "tsx": "^4.23.12",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@10.34.5"
+  "packageManager": "pnpm@11.10.0"
 }
