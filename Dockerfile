@@ -26,24 +26,18 @@ RUN pnpm build && pnpm prune --prod
 
 FROM base AS runtime
 ENV NODE_ENV=production
-RUN apt-get update \
+ARG SECURITY_REFRESH=20261102
+RUN test "$SECURITY_REFRESH" = "20261102" && apt-get update \
     && apt-get upgrade -y --no-install-recommends \
-    && apt-get upgrade --no-install-recommends -y \
     && apt-get install --no-install-recommends -y ca-certificates curl python3 python3-venv qpdf tini \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=uv-bin /uv /uvx /usr/local/bin/
 COPY --from=foxit-source /opt/foxit-pdf-api-mcp-server /opt/foxit-pdf-api-mcp-server
 ENV UV_DEFAULT_INDEX=https://pypi.org/simple
+# Freeze the reviewed production graph; do not resolve unrelated upgrades at build time.
+COPY security/foxit-uv.lock /opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server/uv.lock
 RUN cd /opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
-    && sed -i \
-      -e 's#https://pypi.tuna.tsinghua.edu.cn/simple#https://pypi.org/simple#g' \
-      -e 's#https://pypi.tuna.tsinghua.edu.cn/packages/#https://files.pythonhosted.org/packages/#g' \
-      uv.lock \
-    && uv lock --upgrade-package authlib --upgrade-package fastmcp --upgrade-package anyio --upgrade-package pyjwt --upgrade-package certifi \
-      --upgrade-package cryptography==50.0.0 --upgrade-package jaraco.context==6.1.0 --upgrade-package urllib3==2.8.0 \
-      --upgrade-package pygments==2.20.0 --upgrade-package pydantic-settings==2.14.2 \
-      --upgrade-package python-dotenv==1.2.2 --upgrade-package requests==2.33.0 \
-    && uv sync --no-dev
+    && uv sync --locked --no-dev
 ENV FOXIT_MCP_COMMAND=/usr/local/bin/uv \
     FOXIT_MCP_CWD=/opt/foxit-pdf-api-mcp-server/python/foxit-pdf-api-mcp-server \
     FOXIT_MCP_MODULE_ROOT=/opt/foxit-pdf-api-mcp-server
